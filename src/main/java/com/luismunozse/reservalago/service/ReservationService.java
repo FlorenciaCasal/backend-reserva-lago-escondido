@@ -43,10 +43,10 @@ public class ReservationService {
 
         long hours = Duration.between(now, visitDateTime).toHours();
 
-        if (hours < 24) {
+        if (hours < 48) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Las reservas deben realizarse con al menos 24 horas de anticipación." );
+                    "Las reservas deben realizarse con al menos 48 horas de anticipación." );
         }
     }
 

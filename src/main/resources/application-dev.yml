@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   datasource:
     url: jdbc:postgresql://localhost:5432/lago
     username: postgres
@@ -15,12 +17,24 @@ spring:
     enabled: true
   jackson:
     time-zone: UTC
+  servlet:
+    multipart:
+      max-file-size: ${APP_UPLOAD_MAX_FILE_SIZE:50MB}
+      max-request-size: ${APP_UPLOAD_MAX_REQUEST_SIZE:55MB}
   task:
     scheduling:
       time-zone: America/Argentina/Cordoba
 
 app:
   defaultCapacity: 30
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    model: ${OPENAI_MODEL:gpt-4o-mini}
+  upload:
+    dir: ${APP_UPLOAD_DIR:/var/lib/lago-escondido/uploads}
+    max-image-size: ${APP_UPLOAD_MAX_IMAGE_SIZE_BYTES:5242880}
+    max-document-size: ${APP_UPLOAD_MAX_DOCUMENT_SIZE_BYTES:10485760}
+    max-video-size: ${APP_UPLOAD_MAX_VIDEO_SIZE_BYTES:52428800}
   frontend:
     url: ${FRONTEND_URL:http://localhost:3000}
   jwt:
@@ -36,7 +50,7 @@ app:
 server:
   port: 8080
 
-# Configuración de logging para desarrollo
+# ConfiguraciÃ³n de logging para desarrollo
 logging:
   level:
     root: INFO
@@ -46,7 +60,7 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
-# Configuración de documentación API (habilitada en desarrollo)
+# ConfiguraciÃ³n de documentaciÃ³n API (habilitada en desarrollo)
 springdoc:
   api-docs:
     enabled: true
@@ -56,7 +70,7 @@ springdoc:
     path: /docs
     url: /v3/api-docs
 
-# Configuración de gestión de endpoints (habilitada en desarrollo)
+# ConfiguraciÃ³n de gestiÃ³n de endpoints (habilitada en desarrollo)
 management:
   endpoints:
     web:
@@ -66,7 +80,7 @@ management:
     health:
       show-details: always
 
-# Configuración de CORS para desarrollo
+# ConfiguraciÃ³n de CORS para desarrollo
 cors:
   allowed-origins: http://localhost:3000,http://localhost:3002,http://127.0.0.1:3000,http://127.0.0.1:3002
   allowed-methods: GET,POST,PUT,DELETE,OPTIONS

@@ -36,8 +36,8 @@ ENV TZ=America/Argentina/Cordoba
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Crear directorios necesarios
-RUN mkdir -p /var/log/lago-escondido && \
-    chown -R appuser:appgroup /var/log/lago-escondido
+RUN mkdir -p /var/log/lago-escondido /var/lib/lago-escondido/uploads && \
+    chown -R appuser:appgroup /var/log/lago-escondido /var/lib/lago-escondido/uploads
 
 # Establecer directorio de trabajo
 WORKDIR /app

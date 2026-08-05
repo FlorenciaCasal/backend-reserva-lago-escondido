@@ -3,8 +3,11 @@ package com.luismunozse.reservalago.service;
 import com.luismunozse.reservalago.dto.MediaAssetResponse;
 import com.luismunozse.reservalago.model.MediaAsset;
 import com.luismunozse.reservalago.model.MediaAssetKind;
+import com.luismunozse.reservalago.model.NewsStatus;
 import com.luismunozse.reservalago.model.ProjectStatus;
 import com.luismunozse.reservalago.repo.MediaAssetRepository;
+import com.luismunozse.reservalago.repo.NewsImageRepository;
+import com.luismunozse.reservalago.repo.NewsRepository;
 import com.luismunozse.reservalago.repo.ProjectAdvanceRepository;
 import com.luismunozse.reservalago.repo.ProjectDocumentRepository;
 import com.luismunozse.reservalago.repo.ProjectImageRepository;
@@ -62,6 +65,8 @@ public class MediaAssetService {
     private final ProjectImageRepository projectImageRepository;
     private final ProjectDocumentRepository projectDocumentRepository;
     private final ProjectAdvanceRepository projectAdvanceRepository;
+    private final NewsRepository newsRepository;
+    private final NewsImageRepository newsImageRepository;
 
     @Value("${app.upload.dir:/var/lib/lago-escondido/uploads}")
     private String uploadDir;
@@ -187,7 +192,10 @@ public class MediaAssetService {
                 || projectImageRepository.existsPublishedAssociation(mediaAssetId, ProjectStatus.PUBLISHED)
                 || projectDocumentRepository.existsPublishedAssociation(mediaAssetId, ProjectStatus.PUBLISHED)
                 || projectAdvanceRepository.existsPublishedImageAssociation(mediaAssetId, ProjectStatus.PUBLISHED)
-                || projectAdvanceRepository.existsPublishedVideoAssociation(mediaAssetId, ProjectStatus.PUBLISHED);
+                || projectAdvanceRepository.existsPublishedVideoAssociation(mediaAssetId, ProjectStatus.PUBLISHED)
+                || newsRepository.existsByImageAssetIdAndStatus(mediaAssetId, NewsStatus.PUBLISHED)
+                || newsRepository.existsByVideoAssetIdAndStatus(mediaAssetId, NewsStatus.PUBLISHED)
+                || newsImageRepository.existsPublishedAssociation(mediaAssetId, NewsStatus.PUBLISHED);
     }
 
     private boolean isAdminOrManager() {

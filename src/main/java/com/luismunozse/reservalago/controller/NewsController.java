@@ -2,12 +2,20 @@ package com.luismunozse.reservalago.controller;
 
 import com.luismunozse.reservalago.dto.CreateNewsImageRequest;
 import com.luismunozse.reservalago.dto.CreateNewsRequest;
+import com.luismunozse.reservalago.dto.GenerateNewsRequest;
+import com.luismunozse.reservalago.dto.GenerateNewsSocialContentRequest;
+import com.luismunozse.reservalago.dto.GeneratedNewsDraft;
 import com.luismunozse.reservalago.dto.NewsImageResponse;
 import com.luismunozse.reservalago.dto.NewsResponse;
+import com.luismunozse.reservalago.dto.NewsSocialContentRequest;
+import com.luismunozse.reservalago.dto.NewsSocialContentResponse;
 import com.luismunozse.reservalago.dto.UpdateNewsImageRequest;
 import com.luismunozse.reservalago.dto.UpdateNewsRequest;
+import com.luismunozse.reservalago.model.SocialPlatform;
+import com.luismunozse.reservalago.service.NewsAiService;
 import com.luismunozse.reservalago.service.NewsImageService;
 import com.luismunozse.reservalago.service.NewsService;
+import com.luismunozse.reservalago.service.NewsSocialContentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +30,8 @@ public class NewsController {
 
     private final NewsService newsService;
     private final NewsImageService newsImageService;
+    private final NewsSocialContentService newsSocialContentService;
+    private final NewsAiService newsAiService;
 
     @GetMapping("/api/news")
     public List<NewsResponse> listPublishedNews() {
@@ -49,6 +59,11 @@ public class NewsController {
         return newsService.create(request);
     }
 
+    @PostMapping("/api/admin/news/generate")
+    public GeneratedNewsDraft generateNews(@Valid @RequestBody GenerateNewsRequest request) {
+        return newsAiService.generate(request);
+    }
+
     @PutMapping("/api/admin/news/{id}")
     public NewsResponse updateNews(
             @PathVariable UUID id,
@@ -65,6 +80,30 @@ public class NewsController {
     @PostMapping("/api/admin/news/{id}/archive")
     public NewsResponse archiveNews(@PathVariable UUID id) {
         return newsService.archive(id);
+    }
+
+
+    @GetMapping("/api/admin/news/{newsId}/social")
+    public List<NewsSocialContentResponse> listNewsSocialContent(@PathVariable UUID newsId) {
+        return newsSocialContentService.listByNews(newsId);
+    }
+
+    @PutMapping("/api/admin/news/{newsId}/social/{platform}")
+    public NewsSocialContentResponse saveNewsSocialContent(
+            @PathVariable UUID newsId,
+            @PathVariable SocialPlatform platform,
+            @Valid @RequestBody NewsSocialContentRequest request
+    ) {
+        return newsSocialContentService.save(newsId, platform, request);
+    }
+
+    @PostMapping("/api/admin/news/{newsId}/social/{platform}/generate")
+    public NewsSocialContentResponse generateNewsSocialContent(
+            @PathVariable UUID newsId,
+            @PathVariable SocialPlatform platform,
+            @Valid @RequestBody GenerateNewsSocialContentRequest request
+    ) {
+        return newsAiService.generateSocialContent(newsId, platform, request);
     }
 
     @GetMapping("/api/admin/news/{newsId}/images")

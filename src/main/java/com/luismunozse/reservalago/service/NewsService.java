@@ -9,6 +9,7 @@ import com.luismunozse.reservalago.model.NewsStatus;
 import com.luismunozse.reservalago.repo.NewsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.text.Normalizer;
@@ -107,6 +108,15 @@ public class NewsService {
         return toResponse(newsRepository.save(news));
     }
 
+    @Transactional
+    public void deletePermanently(UUID id) {
+        News news = findNews(id);
+        if (news.getStatus() != NewsStatus.ARCHIVED) {
+            throw new ResponseStatusException(BAD_REQUEST, "Solo se pueden eliminar definitivamente novedades archivadas");
+        }
+
+        newsRepository.delete(news);
+    }
     private NewsResponse toResponse(News news) {
         return new NewsResponse(
                 news.getId(),

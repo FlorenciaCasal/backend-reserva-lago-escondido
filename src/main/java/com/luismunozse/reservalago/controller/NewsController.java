@@ -82,7 +82,11 @@ public class NewsController {
         return newsService.archive(id);
     }
 
-
+    @DeleteMapping("/api/admin/news/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteNewsPermanently(@PathVariable UUID id) {
+        newsService.deletePermanently(id);
+    }
     @GetMapping("/api/admin/news/{newsId}/social")
     public List<NewsSocialContentResponse> listNewsSocialContent(@PathVariable UUID newsId) {
         return newsSocialContentService.listByNews(newsId);

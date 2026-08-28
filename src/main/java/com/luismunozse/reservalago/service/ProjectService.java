@@ -9,6 +9,7 @@ import com.luismunozse.reservalago.model.ProjectStatus;
 import com.luismunozse.reservalago.repo.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.text.Normalizer;
@@ -16,6 +17,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -116,6 +118,15 @@ public class ProjectService {
         return toResponse(projectRepository.save(project));
     }
 
+    @Transactional
+    public void deletePermanently(UUID id) {
+        Project project = findProject(id);
+        if (project.getStatus() != ProjectStatus.ARCHIVED) {
+            throw new ResponseStatusException(BAD_REQUEST, "Solo se pueden eliminar definitivamente proyectos archivados");
+        }
+
+        projectRepository.delete(project);
+    }
     private ProjectResponse toResponse(Project project) {
         return new ProjectResponse(
                 project.getId(),

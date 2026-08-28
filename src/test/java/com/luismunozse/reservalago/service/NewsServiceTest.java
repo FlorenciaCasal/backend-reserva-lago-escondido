@@ -143,6 +143,43 @@ class NewsServiceTest {
         assertThat(response.get(0).status()).isEqualTo(NewsStatus.PUBLISHED);
     }
 
+
+    @Test
+    void shouldDeleteArchivedNewsPermanently() {
+        UUID id = UUID.randomUUID();
+        News news = existingNews(id, NewsStatus.ARCHIVED);
+        when(newsRepository.findById(id)).thenReturn(Optional.of(news));
+
+        newsService.deletePermanently(id);
+
+        verify(newsRepository).delete(news);
+    }
+
+    @Test
+    void shouldRejectPermanentDeleteForPublishedNews() {
+        UUID id = UUID.randomUUID();
+        News news = existingNews(id, NewsStatus.PUBLISHED);
+        when(newsRepository.findById(id)).thenReturn(Optional.of(news));
+
+        assertThatThrownBy(() -> newsService.deletePermanently(id))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Solo se pueden eliminar definitivamente novedades archivadas");
+
+        verify(newsRepository, never()).delete(news);
+    }
+
+    @Test
+    void shouldRejectPermanentDeleteForDraftNews() {
+        UUID id = UUID.randomUUID();
+        News news = existingNews(id, NewsStatus.DRAFT);
+        when(newsRepository.findById(id)).thenReturn(Optional.of(news));
+
+        assertThatThrownBy(() -> newsService.deletePermanently(id))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Solo se pueden eliminar definitivamente novedades archivadas");
+
+        verify(newsRepository, never()).delete(news);
+    }
     private News existingNews(UUID id, NewsStatus status) {
         News news = new News();
         news.setId(id);

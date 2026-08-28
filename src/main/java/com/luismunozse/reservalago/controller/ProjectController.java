@@ -152,6 +152,11 @@ public class ProjectController {
         return projectService.archive(id);
     }
 
+    @DeleteMapping("/api/admin/projects/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteProjectPermanently(@PathVariable UUID id) {
+        projectService.deletePermanently(id);
+    }
     @GetMapping("/api/admin/projects/{projectId}/advances")
     public List<ProjectAdvanceResponse> listAdminProjectAdvances(@PathVariable UUID projectId) {
         return projectAdvanceService.listAdminByProjectId(projectId);

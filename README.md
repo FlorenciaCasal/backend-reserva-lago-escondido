@@ -523,3 +523,5 @@ Desarrollado por **Luis Muñoz**
 
 **Versión:** 1.0.0
 **Última actualización:** Diciembre 2025
+
+Prueba autodeploy

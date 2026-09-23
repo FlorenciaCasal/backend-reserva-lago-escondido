@@ -58,7 +58,7 @@ public class ProjectAdvanceService {
     }
 
     private List<ProjectAdvanceResponse> listByProject(UUID projectId) {
-        return projectAdvanceRepository.findByProjectIdOrderByAdvanceDateDescCreatedAtDesc(projectId)
+        return projectAdvanceRepository.findByProjectIdOrderByAdvanceDateAscCreatedAtAscIdAsc(projectId)
                 .stream()
                 .map(this::toResponse)
                 .toList();

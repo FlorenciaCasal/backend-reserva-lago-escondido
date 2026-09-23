@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface ProjectAdvanceRepository extends JpaRepository<ProjectAdvance, UUID> {
-    List<ProjectAdvance> findByProjectIdOrderByAdvanceDateDescCreatedAtDesc(UUID projectId);
+    List<ProjectAdvance> findByProjectIdOrderByAdvanceDateAscCreatedAtAscIdAsc(UUID projectId);
     Optional<ProjectAdvance> findByIdAndProjectId(UUID id, UUID projectId);
 
     @Query("select count(a) > 0 from ProjectAdvance a where a.imageAsset.id = :mediaAssetId and a.project.status = :status")

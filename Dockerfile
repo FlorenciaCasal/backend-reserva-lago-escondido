@@ -29,7 +29,21 @@ RUN addgroup -g 1001 -S appgroup && \
 RUN apk add --no-cache \
     tzdata \
     curl \
+    imagemagick \
+    imagemagick-heic \
+    imagemagick-jpeg \
+    imagemagick-webp \
+    libheif \
+    libwebp \
     && rm -rf /var/cache/apk/*
+
+# Verificar que el runtime final puede leer/escribir los formatos soportados
+RUN magick -list format | grep -E "JPEG.*rw" && \
+    magick -list format | grep -E "JPG.*rw" && \
+    magick -list format | grep -E "PNG.*rw" && \
+    magick -list format | grep -E "HEIC.*r" && \
+    magick -list format | grep -E "HEIF.*r" && \
+    magick -list format | grep -E "WEBP.*rw"
 
 # Establecer zona horaria
 ENV TZ=America/Argentina/Cordoba

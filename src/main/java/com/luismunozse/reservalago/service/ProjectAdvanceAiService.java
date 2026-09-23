@@ -151,7 +151,7 @@ public class ProjectAdvanceAiService {
     }
 
     private String buildPrompt(Project project, GenerateProjectAdvanceRequest request) {
-        String previousAdvances = projectAdvanceRepository.findByProjectIdOrderByAdvanceDateDescCreatedAtDesc(project.getId())
+        String previousAdvances = projectAdvanceRepository.findByProjectIdOrderByAdvanceDateAscCreatedAtAscIdAsc(project.getId())
                 .stream()
                 .limit(5)
                 .map(advance -> "- %s | %s: %s".formatted(advance.getAdvanceDate(), advance.getTitle(), advance.getDescription()))

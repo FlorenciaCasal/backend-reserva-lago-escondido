@@ -12,6 +12,7 @@ import com.luismunozse.reservalago.repo.ProjectAdvanceRepository;
 import com.luismunozse.reservalago.repo.ProjectDocumentRepository;
 import com.luismunozse.reservalago.repo.ProjectImageRepository;
 import com.luismunozse.reservalago.repo.ProjectRepository;
+import com.luismunozse.reservalago.repo.SystemConfigRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -24,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
@@ -43,12 +45,12 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @RequiredArgsConstructor
 public class MediaAssetService {
 
-    private static final Set<String> ALLOWED_IMAGE_CONTENT_TYPES = Set.of(
-            MediaType.IMAGE_JPEG_VALUE,
-            MediaType.IMAGE_PNG_VALUE,
-            "image/webp"
+    private static final Set<String> PUBLIC_SYSTEM_CONFIG_MEDIA_KEYS = Set.of(
+            "home_hero_image_url",
+            "home_visits_image_url"
     );
-    private static final Set<String> ALLOWED_IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
+
+    private static final Set<String> ALLOWED_IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "heic", "heif");
 
     private static final Set<String> ALLOWED_DOCUMENT_CONTENT_TYPES = Set.of(
             MediaType.APPLICATION_PDF_VALUE,
@@ -67,11 +69,13 @@ public class MediaAssetService {
     private final ProjectAdvanceRepository projectAdvanceRepository;
     private final NewsRepository newsRepository;
     private final NewsImageRepository newsImageRepository;
+    private final SystemConfigRepository systemConfigRepository;
+    private final ImageProcessingService imageProcessingService;
 
     @Value("${app.upload.dir:/var/lib/lago-escondido/uploads}")
     private String uploadDir;
 
-    @Value("${app.upload.max-image-size:5242880}")
+    @Value("${app.upload.max-image-size:20971520}")
     private long maxImageSize;
 
     @Value("${app.upload.max-document-size:10485760}")
@@ -81,8 +85,8 @@ public class MediaAssetService {
     private long maxVideoSize;
 
     public MediaAssetResponse uploadImage(MultipartFile file) {
-        validateFile(file, ALLOWED_IMAGE_CONTENT_TYPES, ALLOWED_IMAGE_EXTENSIONS, maxImageSize, "imagen");
-        return storeFile(file, MediaAssetKind.IMAGE, "images");
+        validateImageFile(file);
+        return storeProcessedImage(file);
     }
 
     public MediaAssetResponse uploadDocument(MultipartFile file) {
@@ -151,6 +155,29 @@ public class MediaAssetService {
         );
     }
 
+    private MediaAssetResponse storeProcessedImage(MultipartFile file) {
+        UUID fileId = UUID.randomUUID();
+        String storageKey = "images/" + fileId + ".webp";
+        Path target = resolveStorageKey(storageKey);
+
+        try {
+            imageProcessingService.process(file, target);
+
+            MediaAsset asset = new MediaAsset();
+            asset.setKind(MediaAssetKind.IMAGE);
+            asset.setStorageProvider("local");
+            asset.setStorageKey(storageKey);
+            asset.setOriginalFilename(safeOriginalFilename(file.getOriginalFilename()));
+            asset.setContentType("image/webp");
+            asset.setSizeBytes(Files.size(target));
+            asset.setChecksum(sha256(target));
+
+            return toResponse(mediaAssetRepository.save(asset));
+        } catch (IOException ex) {
+            throw new UncheckedIOException("No se pudo guardar la imagen", ex);
+        }
+    }
+
     private MediaAssetResponse storeFile(MultipartFile file, MediaAssetKind kind, String folder) {
         UUID fileId = UUID.randomUUID();
         String extension = extensionOf(file.getOriginalFilename());
@@ -195,7 +222,14 @@ public class MediaAssetService {
                 || projectAdvanceRepository.existsPublishedVideoAssociation(mediaAssetId, ProjectStatus.PUBLISHED)
                 || newsRepository.existsByImageAssetIdAndStatus(mediaAssetId, NewsStatus.PUBLISHED)
                 || newsRepository.existsByVideoAssetIdAndStatus(mediaAssetId, NewsStatus.PUBLISHED)
-                || newsImageRepository.existsPublishedAssociation(mediaAssetId, NewsStatus.PUBLISHED);
+                || newsImageRepository.existsPublishedAssociation(mediaAssetId, NewsStatus.PUBLISHED)
+                || isReferencedByPublicSystemConfig(mediaAssetId);
+    }
+
+    private boolean isReferencedByPublicSystemConfig(UUID mediaAssetId) {
+        String mediaUrl = "/api/media/" + mediaAssetId;
+        return PUBLIC_SYSTEM_CONFIG_MEDIA_KEYS.stream()
+                .anyMatch(key -> systemConfigRepository.existsByConfigKeyAndConfigValue(key, mediaUrl));
     }
 
     private boolean isAdminOrManager() {
@@ -205,6 +239,20 @@ public class MediaAssetService {
         return authentication.getAuthorities().stream().anyMatch(authority ->
                 "ROLE_ADMIN".equals(authority.getAuthority()) || "ROLE_MANAGER".equals(authority.getAuthority())
         );
+    }
+
+    private void validateImageFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(BAD_REQUEST, "El archivo es obligatorio");
+        }
+        if (file.getSize() > maxImageSize) {
+            throw new ResponseStatusException(BAD_REQUEST, "El archivo supera el tamano maximo permitido");
+        }
+
+        String extension = extensionOf(file.getOriginalFilename());
+        if (!ALLOWED_IMAGE_EXTENSIONS.contains(extension)) {
+            throw new ResponseStatusException(BAD_REQUEST, "Extension de imagen no permitida");
+        }
     }
 
     private void validateFile(
@@ -261,6 +309,22 @@ public class MediaAssetService {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             return HexFormat.of().formatHex(digest.digest(bytes));
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 no disponible", ex);
+        }
+    }
+
+    private String sha256(Path path) throws IOException {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            try (InputStream input = Files.newInputStream(path)) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = input.read(buffer)) != -1) {
+                    digest.update(buffer, 0, read);
+                }
+            }
+            return HexFormat.of().formatHex(digest.digest());
         } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException("SHA-256 no disponible", ex);
         }

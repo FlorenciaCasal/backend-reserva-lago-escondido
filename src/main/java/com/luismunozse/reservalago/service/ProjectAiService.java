@@ -15,6 +15,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.text.Normalizer;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
@@ -24,6 +26,9 @@ import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 public class ProjectAiService {
 
     private static final String DEFAULT_MODEL = "gpt-4o-mini";
+    private static final int MAX_SUMMARY_LENGTH = 600;
+    private static final int TARGET_SUMMARY_LENGTH = 550;
+    private static final Pattern SENTENCE_PATTERN = Pattern.compile("[^.!?]+[.!?]+[\"')\\]]*");
 
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newHttpClient();
@@ -121,7 +126,7 @@ public class ProjectAiService {
 
         JsonNode draft = objectMapper.readTree(extractJson(text));
         String title = draft.path("title").asText("").trim();
-        String summary = draft.path("summary").asText("").trim();
+        String summary = normalizeSummary(draft.path("summary").asText("").trim());
         String content = draft.path("content").asText("").trim();
         String slug = draft.path("slug").asText("").trim();
 
@@ -168,6 +173,9 @@ public class ProjectAiService {
                 - El title no debe empezar siempre con "Proyecto de" ni terminar con "Reserva Natural Lago Escondido".
                 - Evitar titulos repetitivos o burocraticos; usar nombres claros como "Bosque de Alerces", "Monitoreo del Huemul" o "Restauracion de Humedales".
                 - El summary debe ser una introduccion rapida de 1 o 2 frases breves, pensada para ocupar pocas lineas en tarjetas y listados.
+                - El summary debe tener como maximo 600 caracteres incluyendo espacios.
+                - Idealmente el summary debe quedar entre 450 y 550 caracteres para no quedar justo en el limite.
+                - El summary debe ser realmente un resumen breve del proyecto, no una version extensa ni una repeticion del content.
                 - Evitar summaries extensos, explicaciones completas o repeticion literal del titulo.
                 - El content debe estar estructurado narrativamente, aunque sin subtitulos obligatorios, cubriendo: contexto, problema o desafio, acciones del proyecto, impacto esperado e importancia para la reserva o la comunidad.
                 - Devolver unicamente JSON valido, sin markdown ni texto adicional:
@@ -197,7 +205,11 @@ public class ProjectAiService {
                 "required", new String[]{"title", "summary", "content", "slug"},
                 "properties", Map.of(
                         "title", Map.of("type", "string"),
-                        "summary", Map.of("type", "string"),
+                        "summary", Map.of(
+                                "type", "string",
+                                "maxLength", MAX_SUMMARY_LENGTH,
+                                "description", "Resumen breve de maximo 600 caracteres incluyendo espacios; idealmente entre 450 y 550 caracteres."
+                        ),
                         "content", Map.of("type", "string"),
                         "slug", Map.of("type", "string")
                 )
@@ -225,5 +237,55 @@ public class ProjectAiService {
 
     private String blankToDefault(String value, String defaultValue) {
         return value == null || value.isBlank() ? defaultValue : value.trim();
+    }
+
+    String normalizeSummary(String summary) {
+        if (summary.length() <= MAX_SUMMARY_LENGTH) {
+            return summary;
+        }
+
+        String normalized = summary.replaceAll("\\s+", " ").trim();
+        String targetSummary = completeSentencesWithin(normalized, TARGET_SUMMARY_LENGTH);
+        if (!targetSummary.isBlank()) {
+            return targetSummary;
+        }
+
+        String maxSummary = completeSentencesWithin(normalized, MAX_SUMMARY_LENGTH);
+        if (!maxSummary.isBlank()) {
+            return maxSummary;
+        }
+
+        return truncateAtWordBoundary(normalized);
+    }
+
+    private String completeSentencesWithin(String value, int maxLength) {
+        Matcher matcher = SENTENCE_PATTERN.matcher(value);
+        StringBuilder result = new StringBuilder();
+
+        while (matcher.find()) {
+            String sentence = matcher.group().trim();
+            int nextLength = result.isEmpty() ? sentence.length() : result.length() + 1 + sentence.length();
+            if (nextLength > maxLength) {
+                break;
+            }
+            if (!result.isEmpty()) {
+                result.append(' ');
+            }
+            result.append(sentence);
+        }
+
+        return result.toString().trim();
+    }
+
+    private String truncateAtWordBoundary(String value) {
+        int maxBodyLength = MAX_SUMMARY_LENGTH - 1;
+        int end = Math.min(maxBodyLength, value.length());
+        int lastSpace = value.lastIndexOf(' ', end);
+        if (lastSpace >= 120) {
+            end = lastSpace;
+        }
+
+        String truncated = value.substring(0, end).stripTrailing().replaceAll("[,;:]+$", "");
+        return truncated + ".";
     }
 }

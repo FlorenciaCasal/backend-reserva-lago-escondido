@@ -32,9 +32,13 @@ app:
     model: ${OPENAI_MODEL:gpt-4o-mini}
   upload:
     dir: ${APP_UPLOAD_DIR:/var/lib/lago-escondido/uploads}
-    max-image-size: ${APP_UPLOAD_MAX_IMAGE_SIZE_BYTES:5242880}
+    max-image-size: ${APP_UPLOAD_MAX_IMAGE_SIZE_BYTES:20971520}
     max-document-size: ${APP_UPLOAD_MAX_DOCUMENT_SIZE_BYTES:10485760}
     max-video-size: ${APP_UPLOAD_MAX_VIDEO_SIZE_BYTES:52428800}
+  image-processing:
+    command: ${APP_IMAGE_PROCESSING_COMMAND:magick}
+    timeout-seconds: ${APP_IMAGE_PROCESSING_TIMEOUT_SECONDS:30}
+    temp-dir: ${APP_IMAGE_PROCESSING_TEMP_DIR:}
   frontend:
     url: ${FRONTEND_URL:http://localhost:3000}
   jwt:

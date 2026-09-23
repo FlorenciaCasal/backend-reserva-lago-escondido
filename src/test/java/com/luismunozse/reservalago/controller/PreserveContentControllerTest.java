@@ -59,8 +59,8 @@ class PreserveContentControllerTest {
 
     @Test
     void shouldUpdateAdminPreserveContent() throws Exception {
-        PreserveContentRequest request = new PreserveContentRequest("Nueva bajada", "Nuevo texto", List.of("Uno"));
-        when(preserveContentService.updateContent(any())).thenReturn(new PreserveContentResponse("Nueva bajada", "Nuevo texto", List.of("Uno")));
+        PreserveContentRequest request = request("Nueva bajada", "Nuevo texto", List.of("Uno"));
+        when(preserveContentService.updateContent(any())).thenReturn(response("Nueva bajada", "Nuevo texto", List.of("Uno")));
 
         mockMvc.perform(put("/api/admin/preservar/content")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -70,6 +70,44 @@ class PreserveContentControllerTest {
     }
 
     private PreserveContentResponse response() {
-        return new PreserveContentResponse("Bajada", "Texto", List.of("Uno", "Dos"));
+        return response("Bajada", "Texto", List.of("Uno", "Dos"));
+    }
+
+    private PreserveContentResponse response(String intro, String whatWeDoText, List<String> bullets) {
+        return new PreserveContentResponse(
+                intro,
+                List.of("Naturaleza", "hoy,", "mañana,", "siempre"),
+                "Nuestra tarea",
+                whatWeDoText,
+                bullets,
+                "Un territorio con sentido",
+                "Un territorio destinado a la conservación",
+                "Texto territorio",
+                "42%",
+                "Del territorio destinado a conservación",
+                "Investigación",
+                "Para conocer y monitorear los ecosistemas",
+                "Educación ambiental",
+                "Para acercar el conocimiento y promover su cuidado"
+        );
+    }
+
+    private PreserveContentRequest request(String intro, String whatWeDoText, List<String> bullets) {
+        return new PreserveContentRequest(
+                intro,
+                List.of("Naturaleza", "hoy,", "mañana,", "siempre"),
+                "Nuestra tarea",
+                whatWeDoText,
+                bullets,
+                "Un territorio con sentido",
+                "Un territorio destinado a la conservación",
+                "Texto territorio",
+                "42%",
+                "Del territorio destinado a conservación",
+                "Investigación",
+                "Para conocer y monitorear los ecosistemas",
+                "Educación ambiental",
+                "Para acercar el conocimiento y promover su cuidado"
+        );
     }
 }

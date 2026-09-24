@@ -2,6 +2,7 @@ package com.luismunozse.reservalago.dto;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 public record ProjectAdvanceResponse(
@@ -15,6 +16,7 @@ public record ProjectAdvanceResponse(
         String videoUrl,
         UUID videoAssetId,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        List<MediaGalleryItemResponse> gallery
 ) {
 }

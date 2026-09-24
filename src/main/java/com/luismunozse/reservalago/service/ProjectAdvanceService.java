@@ -26,6 +26,7 @@ public class ProjectAdvanceService {
     private final ProjectRepository projectRepository;
     private final ProjectAdvanceRepository projectAdvanceRepository;
     private final MediaAssetService mediaAssetService;
+    private final ProjectAdvanceGalleryItemService projectAdvanceGalleryItemService;
 
     public List<ProjectAdvanceResponse> listPublicByProjectSlug(String slug) {
         Project project = projectRepository.findBySlugAndStatus(slug, ProjectStatus.PUBLISHED)
@@ -109,7 +110,8 @@ public class ProjectAdvanceService {
                 advance.getVideoUrl(),
                 advance.getVideoAsset() == null ? null : advance.getVideoAsset().getId(),
                 advance.getCreatedAt(),
-                advance.getUpdatedAt()
+                advance.getUpdatedAt(),
+                projectAdvanceGalleryItemService.listResponses(advance.getId())
         );
     }
 }

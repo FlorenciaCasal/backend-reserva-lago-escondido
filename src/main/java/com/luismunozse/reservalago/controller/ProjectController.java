@@ -7,6 +7,8 @@ import com.luismunozse.reservalago.dto.CreateProjectImageRequest;
 import com.luismunozse.reservalago.dto.GenerateProjectAdvanceRequest;
 import com.luismunozse.reservalago.dto.GenerateProjectRequest;
 import com.luismunozse.reservalago.dto.MediaAssetResponse;
+import com.luismunozse.reservalago.dto.MediaGalleryItemRequest;
+import com.luismunozse.reservalago.dto.MediaGalleryItemResponse;
 import com.luismunozse.reservalago.dto.GeneratedProjectAdvanceDraft;
 import com.luismunozse.reservalago.dto.GeneratedProjectDraft;
 import com.luismunozse.reservalago.dto.ProjectAdvanceResponse;
@@ -22,6 +24,8 @@ import com.luismunozse.reservalago.service.ProjectAdvanceAiService;
 import com.luismunozse.reservalago.service.ProjectAdvanceService;
 import com.luismunozse.reservalago.service.ProjectAiService;
 import com.luismunozse.reservalago.service.ProjectDocumentService;
+import com.luismunozse.reservalago.service.ProjectGalleryItemService;
+import com.luismunozse.reservalago.service.ProjectAdvanceGalleryItemService;
 import com.luismunozse.reservalago.service.ProjectImageService;
 import com.luismunozse.reservalago.service.ProjectService;
 import jakarta.validation.Valid;
@@ -46,6 +50,8 @@ public class ProjectController {
     private final ProjectAdvanceAiService projectAdvanceAiService;
     private final ProjectAdvanceService projectAdvanceService;
     private final ProjectImageService projectImageService;
+    private final ProjectGalleryItemService projectGalleryItemService;
+    private final ProjectAdvanceGalleryItemService projectAdvanceGalleryItemService;
     private final ProjectDocumentService projectDocumentService;
     private final MediaAssetService mediaAssetService;
 
@@ -229,6 +235,75 @@ public class ProjectController {
         projectImageService.delete(projectId, imageId);
     }
 
+    @GetMapping("/api/admin/projects/{projectId}/gallery")
+    public List<MediaGalleryItemResponse> listAdminProjectGallery(@PathVariable UUID projectId) {
+        return projectGalleryItemService.listByProjectId(projectId);
+    }
+
+    @PostMapping("/api/admin/projects/{projectId}/gallery")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MediaGalleryItemResponse createProjectGalleryItem(
+            @PathVariable UUID projectId,
+            @Valid @RequestBody MediaGalleryItemRequest request
+    ) {
+        return projectGalleryItemService.create(projectId, request);
+    }
+
+    @PutMapping("/api/admin/projects/{projectId}/gallery/{itemId}")
+    public MediaGalleryItemResponse updateProjectGalleryItem(
+            @PathVariable UUID projectId,
+            @PathVariable UUID itemId,
+            @Valid @RequestBody MediaGalleryItemRequest request
+    ) {
+        return projectGalleryItemService.update(projectId, itemId, request);
+    }
+
+    @DeleteMapping("/api/admin/projects/{projectId}/gallery/{itemId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteProjectGalleryItem(
+            @PathVariable UUID projectId,
+            @PathVariable UUID itemId
+    ) {
+        projectGalleryItemService.delete(projectId, itemId);
+    }
+
+    @GetMapping("/api/admin/projects/{projectId}/advances/{advanceId}/gallery")
+    public List<MediaGalleryItemResponse> listAdminProjectAdvanceGallery(
+            @PathVariable UUID projectId,
+            @PathVariable UUID advanceId
+    ) {
+        return projectAdvanceGalleryItemService.listByAdvanceId(projectId, advanceId);
+    }
+
+    @PostMapping("/api/admin/projects/{projectId}/advances/{advanceId}/gallery")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MediaGalleryItemResponse createProjectAdvanceGalleryItem(
+            @PathVariable UUID projectId,
+            @PathVariable UUID advanceId,
+            @Valid @RequestBody MediaGalleryItemRequest request
+    ) {
+        return projectAdvanceGalleryItemService.create(projectId, advanceId, request);
+    }
+
+    @PutMapping("/api/admin/projects/{projectId}/advances/{advanceId}/gallery/{itemId}")
+    public MediaGalleryItemResponse updateProjectAdvanceGalleryItem(
+            @PathVariable UUID projectId,
+            @PathVariable UUID advanceId,
+            @PathVariable UUID itemId,
+            @Valid @RequestBody MediaGalleryItemRequest request
+    ) {
+        return projectAdvanceGalleryItemService.update(projectId, advanceId, itemId, request);
+    }
+
+    @DeleteMapping("/api/admin/projects/{projectId}/advances/{advanceId}/gallery/{itemId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteProjectAdvanceGalleryItem(
+            @PathVariable UUID projectId,
+            @PathVariable UUID advanceId,
+            @PathVariable UUID itemId
+    ) {
+        projectAdvanceGalleryItemService.delete(projectId, advanceId, itemId);
+    }
     @GetMapping("/api/admin/projects/{projectId}/documents")
     public List<ProjectDocumentResponse> listAdminProjectDocuments(@PathVariable UUID projectId) {
         return projectDocumentService.listByProjectId(projectId);

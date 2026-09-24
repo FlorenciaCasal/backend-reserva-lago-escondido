@@ -27,6 +27,7 @@ public class NewsService {
 
     private final NewsRepository newsRepository;
     private final NewsImageService newsImageService;
+    private final NewsGalleryItemService newsGalleryItemService;
     private final MediaAssetService mediaAssetService;
 
     public List<NewsResponse> listPublished() {
@@ -133,7 +134,8 @@ public class NewsService {
                 news.getArchivedAt(),
                 news.getCreatedAt(),
                 news.getUpdatedAt(),
-                newsImageService.listResponses(news.getId())
+                newsImageService.listResponses(news.getId()),
+                newsGalleryItemService.listResponses(news.getId())
         );
     }
 

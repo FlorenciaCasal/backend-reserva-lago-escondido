@@ -6,12 +6,18 @@ import com.luismunozse.reservalago.dto.GenerateNewsRequest;
 import com.luismunozse.reservalago.dto.GenerateNewsSocialContentRequest;
 import com.luismunozse.reservalago.dto.GeneratedNewsDraft;
 import com.luismunozse.reservalago.dto.NewsResponse;
+import com.luismunozse.reservalago.dto.MediaGalleryItemRequest;
+import com.luismunozse.reservalago.dto.MediaGalleryItemResponse;
 import com.luismunozse.reservalago.dto.NewsSocialContentRequest;
 import com.luismunozse.reservalago.dto.NewsSocialContentResponse;
 import com.luismunozse.reservalago.model.NewsStatus;
+import com.luismunozse.reservalago.model.MediaGalleryKind;
+import com.luismunozse.reservalago.model.MediaGallerySourceType;
+import com.luismunozse.reservalago.model.ExternalMediaProvider;
 import com.luismunozse.reservalago.model.SocialPlatform;
 import com.luismunozse.reservalago.service.JwtService;
 import com.luismunozse.reservalago.service.NewsAiService;
+import com.luismunozse.reservalago.service.NewsGalleryItemService;
 import com.luismunozse.reservalago.service.NewsImageService;
 import com.luismunozse.reservalago.service.NewsService;
 import com.luismunozse.reservalago.service.NewsSocialContentService;
@@ -52,6 +58,9 @@ class NewsControllerTest {
     @MockitoBean
     private NewsImageService newsImageService;
 
+
+    @MockitoBean
+    private NewsGalleryItemService newsGalleryItemService;
     @MockitoBean
     private NewsSocialContentService newsSocialContentService;
 
@@ -189,6 +198,28 @@ class NewsControllerTest {
 
         org.mockito.Mockito.verify(newsService).deletePermanently(id);
     }
+
+    @Test
+    void shouldCreateNewsGalleryItem() throws Exception {
+        UUID newsId = UUID.randomUUID();
+        MediaGalleryItemRequest request = new MediaGalleryItemRequest(
+                MediaGalleryKind.VIDEO,
+                MediaGallerySourceType.EXTERNAL_YOUTUBE,
+                null,
+                "https://www.youtube.com/shorts/dQw4w9WgXcQ",
+                null,
+                "Video complementario",
+                null,
+                0
+        );
+        when(newsGalleryItemService.create(any(), any())).thenReturn(galleryResponse(newsId));
+
+        mockMvc.perform(post("/api/admin/news/{newsId}/gallery", newsId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.externalVideoId").value("dQw4w9WgXcQ"));
+    }
     private NewsResponse response(NewsStatus status) {
         return new NewsResponse(
                 UUID.randomUUID(),
@@ -205,10 +236,31 @@ class NewsControllerTest {
                 status == NewsStatus.ARCHIVED ? Instant.now() : null,
                 Instant.now(),
                 Instant.now(),
+                List.of(),
                 List.of()
         );
     }
 
+
+    private MediaGalleryItemResponse galleryResponse(UUID ownerId) {
+        return new MediaGalleryItemResponse(
+                UUID.randomUUID(),
+                ownerId,
+                MediaGalleryKind.VIDEO,
+                MediaGallerySourceType.EXTERNAL_YOUTUBE,
+                null,
+                "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                ExternalMediaProvider.YOUTUBE,
+                "dQw4w9WgXcQ",
+                "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+                "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+                "Video complementario",
+                null,
+                0,
+                Instant.now(),
+                Instant.now()
+        );
+    }
     private NewsSocialContentResponse socialResponse(UUID newsId, SocialPlatform platform) {
         return new NewsSocialContentResponse(
                 UUID.randomUUID(),

@@ -5,10 +5,13 @@ import com.luismunozse.reservalago.model.MediaAsset;
 import com.luismunozse.reservalago.model.MediaAssetKind;
 import com.luismunozse.reservalago.repo.MediaAssetRepository;
 import com.luismunozse.reservalago.repo.NewsImageRepository;
+import com.luismunozse.reservalago.repo.NewsGalleryItemRepository;
 import com.luismunozse.reservalago.repo.NewsRepository;
 import com.luismunozse.reservalago.repo.ProjectAdvanceRepository;
+import com.luismunozse.reservalago.repo.ProjectAdvanceGalleryItemRepository;
 import com.luismunozse.reservalago.repo.ProjectDocumentRepository;
 import com.luismunozse.reservalago.repo.ProjectImageRepository;
+import com.luismunozse.reservalago.repo.ProjectGalleryItemRepository;
 import com.luismunozse.reservalago.repo.ProjectRepository;
 import com.luismunozse.reservalago.repo.SystemConfigRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -57,16 +60,25 @@ class MediaAssetServiceTest {
     private ProjectImageRepository projectImageRepository;
 
     @Mock
+    private ProjectGalleryItemRepository projectGalleryItemRepository;
+
+    @Mock
     private ProjectDocumentRepository projectDocumentRepository;
 
     @Mock
     private ProjectAdvanceRepository projectAdvanceRepository;
 
     @Mock
+    private ProjectAdvanceGalleryItemRepository projectAdvanceGalleryItemRepository;
+
+    @Mock
     private NewsRepository newsRepository;
 
     @Mock
     private NewsImageRepository newsImageRepository;
+
+    @Mock
+    private NewsGalleryItemRepository newsGalleryItemRepository;
 
     @Mock
     private SystemConfigRepository systemConfigRepository;
@@ -82,10 +94,13 @@ class MediaAssetServiceTest {
                 mediaAssetRepository,
                 projectRepository,
                 projectImageRepository,
+                projectGalleryItemRepository,
                 projectDocumentRepository,
                 projectAdvanceRepository,
+                projectAdvanceGalleryItemRepository,
                 newsRepository,
                 newsImageRepository,
+                newsGalleryItemRepository,
                 systemConfigRepository,
                 imageProcessingService
         );
@@ -240,6 +255,39 @@ class MediaAssetServiceTest {
         assertThat(service.loadForRequest(newId).contentType()).isEqualTo("image/webp");
     }
 
+
+    @Test
+    void shouldAllowAnonymousAccessToPublishedProjectGalleryAsset() throws Exception {
+        UUID id = UUID.randomUUID();
+        mockStoredAsset(id);
+        when(projectGalleryItemRepository.existsPublishedAssociation(id, com.luismunozse.reservalago.model.ProjectStatus.PUBLISHED)).thenReturn(true);
+
+        MediaAssetService.ServedMedia media = service.loadForRequest(id);
+
+        assertThat(media.contentType()).isEqualTo("image/webp");
+    }
+
+    @Test
+    void shouldAllowAnonymousAccessToPublishedAdvanceGalleryAsset() throws Exception {
+        UUID id = UUID.randomUUID();
+        mockStoredAsset(id);
+        when(projectAdvanceGalleryItemRepository.existsPublishedAssociation(id, com.luismunozse.reservalago.model.ProjectStatus.PUBLISHED)).thenReturn(true);
+
+        MediaAssetService.ServedMedia media = service.loadForRequest(id);
+
+        assertThat(media.contentType()).isEqualTo("image/webp");
+    }
+
+    @Test
+    void shouldAllowAnonymousAccessToPublishedNewsGalleryAsset() throws Exception {
+        UUID id = UUID.randomUUID();
+        mockStoredAsset(id);
+        when(newsGalleryItemRepository.existsPublishedAssociation(id, com.luismunozse.reservalago.model.NewsStatus.PUBLISHED)).thenReturn(true);
+
+        MediaAssetService.ServedMedia media = service.loadForRequest(id);
+
+        assertThat(media.contentType()).isEqualTo("image/webp");
+    }
     private void mockPublicHomeReference(String key, UUID id) {
         String mediaUrl = "/api/media/" + id;
         when(systemConfigRepository.existsByConfigKeyAndConfigValue(anyString(), anyString()))

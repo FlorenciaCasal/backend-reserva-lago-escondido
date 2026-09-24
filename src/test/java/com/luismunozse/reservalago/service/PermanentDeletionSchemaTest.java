@@ -40,6 +40,23 @@ class PermanentDeletionSchemaTest {
                 .contains("media_asset_id uuid references media_assets(id) on delete set null");
     }
 
+
+    @Test
+    void multimediaGalleryTablesCascadeOwnersButKeepMediaAssets() throws IOException {
+        String migration = normalizedMigration("V26__create_multimedia_gallery_items.sql");
+
+        assertThat(migration)
+                .contains("create table if not exists project_gallery_items")
+                .contains("project_id uuid not null references projects(id) on delete cascade")
+                .contains("create table if not exists project_advance_gallery_items")
+                .contains("advance_id uuid not null references project_advances(id) on delete cascade")
+                .contains("create table if not exists news_gallery_items")
+                .contains("news_id uuid not null references news(id) on delete cascade")
+                .contains("media_asset_id uuid references media_assets(id) on delete set null")
+                .contains("insert into project_gallery_items")
+                .contains("insert into project_advance_gallery_items")
+                .contains("insert into news_gallery_items");
+    }
     private String normalizedMigration(String filename) throws IOException {
         return Files.readString(Path.of("src", "main", "resources", "db", "migration", filename))
                 .toLowerCase()

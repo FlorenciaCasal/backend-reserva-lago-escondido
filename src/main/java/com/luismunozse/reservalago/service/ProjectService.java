@@ -26,7 +26,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
-    private final ProjectImageService projectImageService;
+    private final ProjectGalleryItemService projectGalleryItemService;
     private final ProjectDocumentService projectDocumentService;
     private final MediaAssetService mediaAssetService;
 
@@ -144,7 +144,7 @@ public class ProjectService {
                 project.getArchivedAt(),
                 project.getCreatedAt(),
                 project.getUpdatedAt(),
-                projectImageService.listResponses(project.getId()),
+                projectGalleryItemService.listResponses(project.getId()),
                 projectDocumentService.listResponses(project.getId())
         );
     }

@@ -21,6 +21,7 @@ public record NewsResponse(
         Instant archivedAt,
         Instant createdAt,
         Instant updatedAt,
-        List<NewsImageResponse> images
+        List<NewsImageResponse> images,
+        List<MediaGalleryItemResponse> gallery
 ) {
 }

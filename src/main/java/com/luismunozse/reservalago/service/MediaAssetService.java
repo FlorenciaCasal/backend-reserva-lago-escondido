@@ -7,10 +7,13 @@ import com.luismunozse.reservalago.model.NewsStatus;
 import com.luismunozse.reservalago.model.ProjectStatus;
 import com.luismunozse.reservalago.repo.MediaAssetRepository;
 import com.luismunozse.reservalago.repo.NewsImageRepository;
+import com.luismunozse.reservalago.repo.NewsGalleryItemRepository;
 import com.luismunozse.reservalago.repo.NewsRepository;
 import com.luismunozse.reservalago.repo.ProjectAdvanceRepository;
+import com.luismunozse.reservalago.repo.ProjectAdvanceGalleryItemRepository;
 import com.luismunozse.reservalago.repo.ProjectDocumentRepository;
 import com.luismunozse.reservalago.repo.ProjectImageRepository;
+import com.luismunozse.reservalago.repo.ProjectGalleryItemRepository;
 import com.luismunozse.reservalago.repo.ProjectRepository;
 import com.luismunozse.reservalago.repo.SystemConfigRepository;
 import lombok.RequiredArgsConstructor;
@@ -65,10 +68,13 @@ public class MediaAssetService {
     private final MediaAssetRepository mediaAssetRepository;
     private final ProjectRepository projectRepository;
     private final ProjectImageRepository projectImageRepository;
+    private final ProjectGalleryItemRepository projectGalleryItemRepository;
     private final ProjectDocumentRepository projectDocumentRepository;
     private final ProjectAdvanceRepository projectAdvanceRepository;
+    private final ProjectAdvanceGalleryItemRepository projectAdvanceGalleryItemRepository;
     private final NewsRepository newsRepository;
     private final NewsImageRepository newsImageRepository;
+    private final NewsGalleryItemRepository newsGalleryItemRepository;
     private final SystemConfigRepository systemConfigRepository;
     private final ImageProcessingService imageProcessingService;
 
@@ -217,12 +223,15 @@ public class MediaAssetService {
         return projectRepository.existsByImageAssetIdAndStatus(mediaAssetId, ProjectStatus.PUBLISHED)
                 || projectRepository.existsByVideoAssetIdAndStatus(mediaAssetId, ProjectStatus.PUBLISHED)
                 || projectImageRepository.existsPublishedAssociation(mediaAssetId, ProjectStatus.PUBLISHED)
+                || projectGalleryItemRepository.existsPublishedAssociation(mediaAssetId, ProjectStatus.PUBLISHED)
                 || projectDocumentRepository.existsPublishedAssociation(mediaAssetId, ProjectStatus.PUBLISHED)
                 || projectAdvanceRepository.existsPublishedImageAssociation(mediaAssetId, ProjectStatus.PUBLISHED)
                 || projectAdvanceRepository.existsPublishedVideoAssociation(mediaAssetId, ProjectStatus.PUBLISHED)
+                || projectAdvanceGalleryItemRepository.existsPublishedAssociation(mediaAssetId, ProjectStatus.PUBLISHED)
                 || newsRepository.existsByImageAssetIdAndStatus(mediaAssetId, NewsStatus.PUBLISHED)
                 || newsRepository.existsByVideoAssetIdAndStatus(mediaAssetId, NewsStatus.PUBLISHED)
                 || newsImageRepository.existsPublishedAssociation(mediaAssetId, NewsStatus.PUBLISHED)
+                || newsGalleryItemRepository.existsPublishedAssociation(mediaAssetId, NewsStatus.PUBLISHED)
                 || isReferencedByPublicSystemConfig(mediaAssetId);
     }
 

@@ -3,14 +3,21 @@ package com.luismunozse.reservalago.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.luismunozse.reservalago.dto.GenerateProjectRequest;
 import com.luismunozse.reservalago.dto.GeneratedProjectDraft;
+import com.luismunozse.reservalago.dto.MediaGalleryItemRequest;
+import com.luismunozse.reservalago.dto.MediaGalleryItemResponse;
 import com.luismunozse.reservalago.service.JwtService;
 import com.luismunozse.reservalago.service.MediaAssetService;
 import com.luismunozse.reservalago.service.ProjectAdvanceAiService;
 import com.luismunozse.reservalago.service.ProjectAdvanceService;
 import com.luismunozse.reservalago.service.ProjectAiService;
 import com.luismunozse.reservalago.service.ProjectDocumentService;
+import com.luismunozse.reservalago.service.ProjectGalleryItemService;
+import com.luismunozse.reservalago.service.ProjectAdvanceGalleryItemService;
 import com.luismunozse.reservalago.service.ProjectImageService;
 import com.luismunozse.reservalago.service.ProjectService;
+import com.luismunozse.reservalago.model.MediaGalleryKind;
+import com.luismunozse.reservalago.model.MediaGallerySourceType;
+import com.luismunozse.reservalago.model.ExternalMediaProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +41,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ProjectController.class)
@@ -64,6 +72,12 @@ class ProjectControllerTest {
     @MockitoBean
     private ProjectImageService projectImageService;
 
+
+    @MockitoBean
+    private ProjectGalleryItemService projectGalleryItemService;
+
+    @MockitoBean
+    private ProjectAdvanceGalleryItemService projectAdvanceGalleryItemService;
     @MockitoBean
     private ProjectDocumentService projectDocumentService;
 
@@ -159,12 +173,81 @@ class ProjectControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+
+    @Test
+    void shouldCreateProjectGalleryItem() throws Exception {
+        UUID projectId = UUID.randomUUID();
+        MediaGalleryItemRequest request = new MediaGalleryItemRequest(
+                MediaGalleryKind.VIDEO,
+                MediaGallerySourceType.EXTERNAL_YOUTUBE,
+                null,
+                "https://youtu.be/dQw4w9WgXcQ",
+                null,
+                "Video institucional",
+                null,
+                0
+        );
+        when(projectGalleryItemService.create(any(), any())).thenReturn(galleryResponse(projectId));
+
+        mockMvc.perform(post("/api/admin/projects/{projectId}/gallery", projectId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.externalVideoId").value("dQw4w9WgXcQ"));
+
+        verify(projectGalleryItemService).create(any(), any());
+    }
+
+    @Test
+    void shouldCreateProjectAdvanceGalleryItem() throws Exception {
+        UUID projectId = UUID.randomUUID();
+        UUID advanceId = UUID.randomUUID();
+        MediaGalleryItemRequest request = new MediaGalleryItemRequest(
+                MediaGalleryKind.VIDEO,
+                MediaGallerySourceType.EXTERNAL_YOUTUBE,
+                null,
+                "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                null,
+                "Video del avance",
+                null,
+                0
+        );
+        when(projectAdvanceGalleryItemService.create(any(), any(), any())).thenReturn(galleryResponse(advanceId));
+
+        mockMvc.perform(post("/api/admin/projects/{projectId}/advances/{advanceId}/gallery", projectId, advanceId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.externalVideoId").value("dQw4w9WgXcQ"));
+
+        verify(projectAdvanceGalleryItemService).create(any(), any(), any());
+    }
     private MediaAssetService.ServedMedia servedVideo(byte[] bytes) throws Exception {
         Path video = tempDir.resolve("video.mp4");
         Files.write(video, bytes);
         return new MediaAssetService.ServedMedia(new UrlResource(video.toUri()), "video/mp4", bytes.length, "video.mp4");
     }
 
+
+    private MediaGalleryItemResponse galleryResponse(UUID ownerId) {
+        return new MediaGalleryItemResponse(
+                UUID.randomUUID(),
+                ownerId,
+                MediaGalleryKind.VIDEO,
+                MediaGallerySourceType.EXTERNAL_YOUTUBE,
+                null,
+                "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                ExternalMediaProvider.YOUTUBE,
+                "dQw4w9WgXcQ",
+                "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+                "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+                "Video institucional",
+                null,
+                0,
+                java.time.Instant.now(),
+                java.time.Instant.now()
+        );
+    }
     private byte[] videoBytes() {
         byte[] bytes = new byte[4096];
         for (int index = 0; index < bytes.length; index++) {

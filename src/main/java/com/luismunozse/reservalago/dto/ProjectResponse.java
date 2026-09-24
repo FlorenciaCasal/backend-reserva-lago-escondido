@@ -22,7 +22,7 @@ public record ProjectResponse(
         Instant archivedAt,
         Instant createdAt,
         Instant updatedAt,
-        List<ProjectImageResponse> gallery,
+        List<MediaGalleryItemResponse> gallery,
         List<ProjectDocumentResponse> documents
 ) {
 }

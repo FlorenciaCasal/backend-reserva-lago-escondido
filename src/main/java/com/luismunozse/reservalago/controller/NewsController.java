@@ -5,6 +5,8 @@ import com.luismunozse.reservalago.dto.CreateNewsRequest;
 import com.luismunozse.reservalago.dto.GenerateNewsRequest;
 import com.luismunozse.reservalago.dto.GenerateNewsSocialContentRequest;
 import com.luismunozse.reservalago.dto.GeneratedNewsDraft;
+import com.luismunozse.reservalago.dto.MediaGalleryItemRequest;
+import com.luismunozse.reservalago.dto.MediaGalleryItemResponse;
 import com.luismunozse.reservalago.dto.NewsImageResponse;
 import com.luismunozse.reservalago.dto.NewsResponse;
 import com.luismunozse.reservalago.dto.NewsSocialContentRequest;
@@ -13,6 +15,7 @@ import com.luismunozse.reservalago.dto.UpdateNewsImageRequest;
 import com.luismunozse.reservalago.dto.UpdateNewsRequest;
 import com.luismunozse.reservalago.model.SocialPlatform;
 import com.luismunozse.reservalago.service.NewsAiService;
+import com.luismunozse.reservalago.service.NewsGalleryItemService;
 import com.luismunozse.reservalago.service.NewsImageService;
 import com.luismunozse.reservalago.service.NewsService;
 import com.luismunozse.reservalago.service.NewsSocialContentService;
@@ -30,6 +33,7 @@ public class NewsController {
 
     private final NewsService newsService;
     private final NewsImageService newsImageService;
+    private final NewsGalleryItemService newsGalleryItemService;
     private final NewsSocialContentService newsSocialContentService;
     private final NewsAiService newsAiService;
 
@@ -110,6 +114,37 @@ public class NewsController {
         return newsAiService.generateSocialContent(newsId, platform, request);
     }
 
+    @GetMapping("/api/admin/news/{newsId}/gallery")
+    public List<MediaGalleryItemResponse> listAdminNewsGallery(@PathVariable UUID newsId) {
+        return newsGalleryItemService.listByNewsId(newsId);
+    }
+
+    @PostMapping("/api/admin/news/{newsId}/gallery")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MediaGalleryItemResponse createNewsGalleryItem(
+            @PathVariable UUID newsId,
+            @Valid @RequestBody MediaGalleryItemRequest request
+    ) {
+        return newsGalleryItemService.create(newsId, request);
+    }
+
+    @PutMapping("/api/admin/news/{newsId}/gallery/{itemId}")
+    public MediaGalleryItemResponse updateNewsGalleryItem(
+            @PathVariable UUID newsId,
+            @PathVariable UUID itemId,
+            @Valid @RequestBody MediaGalleryItemRequest request
+    ) {
+        return newsGalleryItemService.update(newsId, itemId, request);
+    }
+
+    @DeleteMapping("/api/admin/news/{newsId}/gallery/{itemId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteNewsGalleryItem(
+            @PathVariable UUID newsId,
+            @PathVariable UUID itemId
+    ) {
+        newsGalleryItemService.delete(newsId, itemId);
+    }
     @GetMapping("/api/admin/news/{newsId}/images")
     public List<NewsImageResponse> listAdminNewsImages(@PathVariable UUID newsId) {
         return newsImageService.listByNewsId(newsId);

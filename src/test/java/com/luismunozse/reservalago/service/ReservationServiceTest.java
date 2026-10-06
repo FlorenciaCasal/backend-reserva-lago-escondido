@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -52,11 +53,12 @@ class ReservationServiceTest {
 
     private CreateReservationRequest validRequest;
     private Reservation mockReservation;
+    private static final ZoneId ZONE_AR = ZoneId.of("America/Argentina/Buenos_Aires");
 
     @BeforeEach
     void setUp() {
         validRequest = new CreateReservationRequest(
-                LocalDate.now().plusDays(7),
+                LocalDate.now(ZONE_AR).plusDays(7),
                 "Juan",
                 "Perez",
                 "12345678",
@@ -91,7 +93,7 @@ class ReservationServiceTest {
         @DisplayName("Debe rechazar reservas para fechas pasadas")
         void shouldRejectPastDates() {
             var pastRequest = new CreateReservationRequest(
-                    LocalDate.now().minusDays(1),
+                    LocalDate.now(ZONE_AR).minusDays(1),
                     "Juan", "Perez", "12345678", "1155667788", "juan@test.com", null,
                     Circuit.A, VisitorType.INDIVIDUAL, null, null,
                     2, 0, 0, 0, null, "Buenos Aires", HowHeard.SOCIAL, true, List.of()
@@ -103,10 +105,66 @@ class ReservationServiceTest {
         }
 
         @Test
+        @DisplayName("Debe rechazar reservas con menos de 7 días corridos de anticipación")
+        void shouldRejectSixDaysAdvance() {
+            var request = new CreateReservationRequest(
+                    LocalDate.now(ZONE_AR).plusDays(6),
+                    "Juan", "Perez", "12345678", "1155667788", "juan@test.com", null,
+                    Circuit.A, VisitorType.INDIVIDUAL, null, null,
+                    2, 0, 0, 0, null, "Buenos Aires", HowHeard.SOCIAL, true, List.of()
+            );
+
+            assertThatThrownBy(() -> reservationService.create(request))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasMessageContaining("7 días de anticipación");
+        }
+
+        @Test
+        @DisplayName("Debe permitir reservas con 7 días corridos de anticipación")
+        void shouldAllowSevenDaysAdvance() {
+            when(reservationMapper.normalizeDni("12345678")).thenReturn("12345678");
+            when(availabilityService.capacityFor(any())).thenReturn(30);
+            when(reservationRepository.totalPeopleForDate(any())).thenReturn(0);
+            when(reservationRepository.existsByVisitDateAndDniAndStatusNot(any(), any(), any()))
+                    .thenReturn(false);
+            when(reservationMapper.fromCreateRequest(any(), eq("12345678")))
+                    .thenReturn(mockReservation);
+
+            UUID result = reservationService.create(validRequest);
+
+            assertThat(result).isEqualTo(mockReservation.getId());
+            verify(reservationRepository).save(mockReservation);
+        }
+
+        @Test
+        @DisplayName("Debe permitir reservas con 8 días corridos de anticipación")
+        void shouldAllowEightDaysAdvance() {
+            var request = new CreateReservationRequest(
+                    LocalDate.now(ZONE_AR).plusDays(8),
+                    "Juan", "Perez", "12345678", "1155667788", "juan@test.com", null,
+                    Circuit.A, VisitorType.INDIVIDUAL, null, null,
+                    2, 0, 0, 0, null, "Buenos Aires", HowHeard.SOCIAL, true, List.of()
+            );
+
+            when(reservationMapper.normalizeDni("12345678")).thenReturn("12345678");
+            when(availabilityService.capacityFor(any())).thenReturn(30);
+            when(reservationRepository.totalPeopleForDate(any())).thenReturn(0);
+            when(reservationRepository.existsByVisitDateAndDniAndStatusNot(any(), any(), any()))
+                    .thenReturn(false);
+            when(reservationMapper.fromCreateRequest(any(), eq("12345678")))
+                    .thenReturn(mockReservation);
+
+            UUID result = reservationService.create(request);
+
+            assertThat(result).isEqualTo(mockReservation.getId());
+            verify(reservationRepository).save(mockReservation);
+        }
+
+        @Test
         @DisplayName("Debe rechazar reservas sin personas")
         void shouldRejectZeroPeople() {
             var zeroRequest = new CreateReservationRequest(
-                    LocalDate.now().plusDays(7),
+                    LocalDate.now(ZONE_AR).plusDays(7),
                     "Juan", "Perez", "12345678", "1155667788", "juan@test.com", null,
                     Circuit.A, VisitorType.INDIVIDUAL, null, null,
                     0, 0, 0, 0, null, "Buenos Aires", HowHeard.SOCIAL, true, List.of()
@@ -157,7 +215,7 @@ class ReservationServiceTest {
         @DisplayName("Debe rechazar institución educativa si están deshabilitadas")
         void shouldRejectWhenEducationalDisabled() {
             var eduRequest = new CreateReservationRequest(
-                    LocalDate.now().plusDays(7),
+                    LocalDate.now(ZONE_AR).plusDays(7),
                     "Director", "Escuela", "12345678", "1155667788", "dir@escuela.com", null,
                     Circuit.A, VisitorType.EDUCATIONAL_INSTITUTION, "Escuela N°1", 25,
                     2, 0, 0, 0, null, "Córdoba", HowHeard.SOCIAL, true, List.of()
@@ -177,7 +235,7 @@ class ReservationServiceTest {
         @DisplayName("Debe rechazar institución educativa sin nombre")
         void shouldRejectWithoutInstitutionName() {
             var eduRequest = new CreateReservationRequest(
-                    LocalDate.now().plusDays(7),
+                    LocalDate.now(ZONE_AR).plusDays(7),
                     "Director", "Escuela", "12345678", "1155667788", "dir@escuela.com", null,
                     Circuit.A, VisitorType.EDUCATIONAL_INSTITUTION, null, 25,
                     2, 0, 0, 0, null, "Córdoba", HowHeard.SOCIAL, true, List.of()
@@ -197,7 +255,7 @@ class ReservationServiceTest {
         @DisplayName("Debe rechazar institución educativa sin cantidad de estudiantes")
         void shouldRejectWithoutStudentCount() {
             var eduRequest = new CreateReservationRequest(
-                    LocalDate.now().plusDays(7),
+                    LocalDate.now(ZONE_AR).plusDays(7),
                     "Director", "Escuela", "12345678", "1155667788", "dir@escuela.com", null,
                     Circuit.A, VisitorType.EDUCATIONAL_INSTITUTION, "Escuela N°1", null,
                     2, 0, 0, 0, null, "Córdoba", HowHeard.SOCIAL, true, List.of()

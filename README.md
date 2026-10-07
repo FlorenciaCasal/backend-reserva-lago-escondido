@@ -522,7 +522,7 @@ Desarrollado por **Luis Muñoz y Florencia Casal**
 ---
 
 **Versión:** 1.0.0
-**Última actualización:** Oct 2026.
+**Última actualización:** Octubre 2026.
 
 
 

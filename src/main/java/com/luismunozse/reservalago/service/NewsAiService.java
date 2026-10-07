@@ -21,6 +21,7 @@ import java.net.http.HttpResponse;
 import java.text.Normalizer;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
 
 import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
@@ -31,6 +32,9 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public class NewsAiService {
 
     private static final String DEFAULT_MODEL = "gpt-4o-mini";
+    private static final int MAX_SUMMARY_LENGTH = 600;
+    private static final int TARGET_SUMMARY_LENGTH = 550;
+    private static final java.util.regex.Pattern SENTENCE_PATTERN = java.util.regex.Pattern.compile("[^.!?]+[.!?]+|[^.!?]+$");
 
     private final ObjectMapper objectMapper;
     private final NewsRepository newsRepository;
@@ -128,7 +132,7 @@ public class NewsAiService {
     private GeneratedNewsDraft parseNewsResponse(HttpResponse<String> response, String imageUrl) throws Exception {
         JsonNode draft = parseOpenAiJson(response, "OpenAI no pudo generar la novedad");
         String title = draft.path("title").asText("").trim();
-        String summary = draft.path("summary").asText("").trim();
+        String summary = normalizeSummary(draft.path("summary").asText("").trim());
         String content = draft.path("content").asText("").trim();
         String slug = draft.path("slug").asText("").trim();
 
@@ -230,6 +234,9 @@ public class NewsAiService {
                 - Si falta informacion, redactar de forma prudente sin completar con datos inventados.
                 - El title debe ser breve, natural y editorial, preferentemente entre 4 y 10 palabras.
                 - El summary debe tener 1 o 2 frases breves para tarjetas y listados.
+                - El summary debe tener como maximo 600 caracteres incluyendo espacios.
+                - Idealmente el summary debe quedar entre 450 y 550 caracteres para no quedar justo en el limite.
+                - El summary debe ser realmente un resumen breve de la novedad, no una version extensa ni una repeticion del content.
                 - El content debe poder leerse como detalle publico de la novedad, con parrafos claros y sin markdown.
                 - El slug debe ser amigable para URL.
                 - Devolver unicamente JSON valido, sin markdown ni texto adicional:
@@ -316,7 +323,11 @@ public class NewsAiService {
                 "required", new String[]{"title", "summary", "content", "slug"},
                 "properties", Map.of(
                         "title", Map.of("type", "string"),
-                        "summary", Map.of("type", "string"),
+                        "summary", Map.of(
+                                "type", "string",
+                                "maxLength", MAX_SUMMARY_LENGTH,
+                                "description", "Resumen breve de maximo 600 caracteres incluyendo espacios; idealmente entre 450 y 550 caracteres."
+                        ),
                         "content", Map.of("type", "string"),
                         "slug", Map.of("type", "string")
                 )
@@ -360,6 +371,56 @@ public class NewsAiService {
 
     private String blankToDefault(String value, String defaultValue) {
         return value == null || value.isBlank() ? defaultValue : value.trim();
+    }
+
+    String normalizeSummary(String summary) {
+        if (summary.length() <= MAX_SUMMARY_LENGTH) {
+            return summary;
+        }
+
+        String normalized = summary.replaceAll("\\s+", " ").trim();
+        String targetSummary = completeSentencesWithin(normalized, TARGET_SUMMARY_LENGTH);
+        if (!targetSummary.isBlank()) {
+            return targetSummary;
+        }
+
+        String maxSummary = completeSentencesWithin(normalized, MAX_SUMMARY_LENGTH);
+        if (!maxSummary.isBlank()) {
+            return maxSummary;
+        }
+
+        return truncateAtWordBoundary(normalized);
+    }
+
+    private String completeSentencesWithin(String value, int maxLength) {
+        Matcher matcher = SENTENCE_PATTERN.matcher(value);
+        StringBuilder result = new StringBuilder();
+
+        while (matcher.find()) {
+            String sentence = matcher.group().trim();
+            int nextLength = result.isEmpty() ? sentence.length() : result.length() + 1 + sentence.length();
+            if (nextLength > maxLength) {
+                break;
+            }
+            if (!result.isEmpty()) {
+                result.append(' ');
+            }
+            result.append(sentence);
+        }
+
+        return result.toString().trim();
+    }
+
+    private String truncateAtWordBoundary(String value) {
+        int maxBodyLength = MAX_SUMMARY_LENGTH - 1;
+        int end = Math.min(maxBodyLength, value.length());
+        int lastSpace = value.lastIndexOf(' ', end);
+        if (lastSpace >= 120) {
+            end = lastSpace;
+        }
+
+        String truncated = value.substring(0, end).stripTrailing().replaceAll("[,;:]+$", "");
+        return truncated + ".";
     }
 
     private String blankToNull(String value) {

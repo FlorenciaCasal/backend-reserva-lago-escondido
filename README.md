@@ -517,12 +517,12 @@ openssl rand -base64 24
 
 ## Autor
 
-Desarrollado por **Luis Muñoz**
+Desarrollado por **Luis Muñoz y Florencia Casal**
 
 ---
 
 **Versión:** 1.0.0
 **Última actualización:** Diciembre 2025
 
-Prueba  deploy 2
+
 

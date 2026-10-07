@@ -4,6 +4,7 @@ import com.luismunozse.reservalago.model.NewsStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 public record UpdateNewsRequest(
@@ -30,6 +31,8 @@ public record UpdateNewsRequest(
         String videoUrl,
 
         UUID videoAssetId,
+
+        LocalDate editorialDate,
 
         NewsStatus status
 ) {

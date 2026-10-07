@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.text.Normalizer;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,7 +32,7 @@ public class NewsService {
     private final MediaAssetService mediaAssetService;
 
     public List<NewsResponse> listPublished() {
-        return newsRepository.findByStatusOrderByPublishedAtDescCreatedAtDesc(NewsStatus.PUBLISHED)
+        return newsRepository.findByStatusOrderByEditorialDateDescPublishedAtDescCreatedAtDesc(NewsStatus.PUBLISHED)
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -67,6 +68,7 @@ public class NewsService {
         news.setSlug(slug);
         applyImage(news, request.imageUrl(), request.imageAssetId());
         applyVideo(news, request.videoUrl(), request.videoAssetId());
+        news.setEditorialDate(request.editorialDate() == null ? LocalDate.now() : request.editorialDate());
         NewsStatus requestedStatus = request.status() == null ? NewsStatus.DRAFT : request.status();
         if (requestedStatus == NewsStatus.ARCHIVED) {
             throw new ResponseStatusException(BAD_REQUEST, "Una novedad nueva debe guardarse como borrador o publicada");
@@ -89,6 +91,11 @@ public class NewsService {
         news.setSlug(slug);
         applyImage(news, request.imageUrl(), request.imageAssetId());
         applyVideo(news, request.videoUrl(), request.videoAssetId());
+        if (request.editorialDate() != null) {
+            news.setEditorialDate(request.editorialDate());
+        } else if (news.getEditorialDate() == null) {
+            news.setEditorialDate(LocalDate.now());
+        }
         if (request.status() != null) {
             validateTransition(news.getStatus(), request.status());
             applyStatus(news, request.status());
@@ -130,6 +137,7 @@ public class NewsService {
                 news.getVideoAsset() == null ? null : news.getVideoAsset().getId(),
                 news.getVideoUrl(),
                 news.getStatus(),
+                news.getEditorialDate(),
                 news.getPublishedAt(),
                 news.getArchivedAt(),
                 news.getCreatedAt(),

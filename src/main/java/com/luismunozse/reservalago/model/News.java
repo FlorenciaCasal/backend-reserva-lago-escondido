@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -49,6 +50,9 @@ public class News {
 
     @Column(name = "published_at")
     private Instant publishedAt;
+
+    @Column(name = "editorial_date", nullable = false)
+    private LocalDate editorialDate = LocalDate.now();
 
     @Column(name = "archived_at")
     private Instant archivedAt;

@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,6 +33,9 @@ class NewsServiceTest {
     private NewsImageService newsImageService;
 
     @Mock
+    private NewsGalleryItemService newsGalleryItemService;
+
+    @Mock
     private MediaAssetService mediaAssetService;
 
     @InjectMocks
@@ -46,11 +50,13 @@ class NewsServiceTest {
             return news;
         });
         when(newsImageService.listResponses(any())).thenReturn(List.of());
+        when(newsGalleryItemService.listResponses(any())).thenReturn(List.of());
 
         NewsResponse response = newsService.create(new CreateNewsRequest(
                 "Titulo de prueba",
                 "Resumen de prueba",
                 "Contenido de prueba",
+                null,
                 null,
                 null,
                 null,
@@ -62,6 +68,35 @@ class NewsServiceTest {
         assertThat(response.status()).isEqualTo(NewsStatus.DRAFT);
         assertThat(response.slug()).isEqualTo("titulo-de-prueba");
         assertThat(response.publishedAt()).isNull();
+        assertThat(response.editorialDate()).isEqualTo(LocalDate.now());
+    }
+
+    @Test
+    void shouldCreateNewsWithExplicitEditorialDate() {
+        LocalDate editorialDate = LocalDate.of(2026, 10, 2);
+        when(newsRepository.existsBySlug("novedad-publicada")).thenReturn(false);
+        when(newsRepository.save(any(News.class))).thenAnswer(invocation -> {
+            News news = invocation.getArgument(0);
+            news.setId(UUID.randomUUID());
+            return news;
+        });
+        when(newsImageService.listResponses(any())).thenReturn(List.of());
+        when(newsGalleryItemService.listResponses(any())).thenReturn(List.of());
+
+        NewsResponse response = newsService.create(new CreateNewsRequest(
+                "Novedad publicada",
+                "Resumen",
+                "Contenido",
+                null,
+                null,
+                null,
+                null,
+                null,
+                editorialDate,
+                NewsStatus.PUBLISHED
+        ));
+
+        assertThat(response.editorialDate()).isEqualTo(editorialDate);
     }
 
     @Test
@@ -73,11 +108,13 @@ class NewsServiceTest {
             return news;
         });
         when(newsImageService.listResponses(any())).thenReturn(List.of());
+        when(newsGalleryItemService.listResponses(any())).thenReturn(List.of());
 
         NewsResponse response = newsService.create(new CreateNewsRequest(
                 "Novedad publicada",
                 "Resumen",
                 "Contenido",
+                null,
                 null,
                 null,
                 null,
@@ -106,6 +143,7 @@ class NewsServiceTest {
                 null,
                 null,
                 null,
+                null,
                 NewsStatus.DRAFT
         );
 
@@ -123,6 +161,7 @@ class NewsServiceTest {
         when(newsRepository.findById(id)).thenReturn(Optional.of(news));
         when(newsRepository.save(any(News.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(newsImageService.listResponses(id)).thenReturn(List.of());
+        when(newsGalleryItemService.listResponses(id)).thenReturn(List.of());
 
         NewsResponse response = newsService.publish(id);
 
@@ -133,16 +172,73 @@ class NewsServiceTest {
     @Test
     void shouldListOnlyPublishedNewsOrderedByRepository() {
         News published = existingNews(UUID.randomUUID(), NewsStatus.PUBLISHED);
-        when(newsRepository.findByStatusOrderByPublishedAtDescCreatedAtDesc(NewsStatus.PUBLISHED))
+        when(newsRepository.findByStatusOrderByEditorialDateDescPublishedAtDescCreatedAtDesc(NewsStatus.PUBLISHED))
                 .thenReturn(List.of(published));
         when(newsImageService.listResponses(published.getId())).thenReturn(List.of());
+        when(newsGalleryItemService.listResponses(published.getId())).thenReturn(List.of());
 
         List<NewsResponse> response = newsService.listPublished();
 
         assertThat(response).hasSize(1);
         assertThat(response.get(0).status()).isEqualTo(NewsStatus.PUBLISHED);
+        verify(newsRepository).findByStatusOrderByEditorialDateDescPublishedAtDescCreatedAtDesc(NewsStatus.PUBLISHED);
     }
 
+    @Test
+    void shouldPreserveEditorialDateWhenUpdatingWithoutExplicitDate() {
+        UUID id = UUID.randomUUID();
+        LocalDate editorialDate = LocalDate.of(2026, 10, 2);
+        News news = existingNews(id, NewsStatus.DRAFT);
+        news.setEditorialDate(editorialDate);
+        when(newsRepository.findById(id)).thenReturn(Optional.of(news));
+        when(newsRepository.existsBySlugAndIdNot("novedad-actualizada", id)).thenReturn(false);
+        when(newsRepository.save(any(News.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(newsImageService.listResponses(id)).thenReturn(List.of());
+        when(newsGalleryItemService.listResponses(id)).thenReturn(List.of());
+
+        NewsResponse response = newsService.update(id, new UpdateNewsRequest(
+                "Novedad actualizada",
+                "Resumen",
+                "Contenido",
+                "novedad-actualizada",
+                null,
+                null,
+                null,
+                null,
+                null,
+                NewsStatus.DRAFT
+        ));
+
+        assertThat(response.editorialDate()).isEqualTo(editorialDate);
+    }
+
+    @Test
+    void shouldUpdateEditorialDateWhenExplicitDateIsProvided() {
+        UUID id = UUID.randomUUID();
+        LocalDate newEditorialDate = LocalDate.of(2026, 10, 5);
+        News news = existingNews(id, NewsStatus.DRAFT);
+        news.setEditorialDate(LocalDate.of(2026, 10, 2));
+        when(newsRepository.findById(id)).thenReturn(Optional.of(news));
+        when(newsRepository.existsBySlugAndIdNot("novedad-actualizada", id)).thenReturn(false);
+        when(newsRepository.save(any(News.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(newsImageService.listResponses(id)).thenReturn(List.of());
+        when(newsGalleryItemService.listResponses(id)).thenReturn(List.of());
+
+        NewsResponse response = newsService.update(id, new UpdateNewsRequest(
+                "Novedad actualizada",
+                "Resumen",
+                "Contenido",
+                "novedad-actualizada",
+                null,
+                null,
+                null,
+                null,
+                newEditorialDate,
+                NewsStatus.DRAFT
+        ));
+
+        assertThat(response.editorialDate()).isEqualTo(newEditorialDate);
+    }
 
     @Test
     void shouldDeleteArchivedNewsPermanently() {
@@ -188,6 +284,7 @@ class NewsServiceTest {
         news.setContent("Contenido");
         news.setSlug("novedad-publicada");
         news.setStatus(status);
+        news.setEditorialDate(LocalDate.of(2026, 10, 2));
         return news;
     }
 }

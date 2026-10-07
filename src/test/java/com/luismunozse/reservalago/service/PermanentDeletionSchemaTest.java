@@ -57,6 +57,18 @@ class PermanentDeletionSchemaTest {
                 .contains("insert into project_advance_gallery_items")
                 .contains("insert into news_gallery_items");
     }
+
+    @Test
+    void newsEditorialDateMigrationBackfillsAndRequiresDate() throws IOException {
+        String migration = normalizedMigration("V27__add_news_editorial_date.sql");
+
+        assertThat(migration)
+                .contains("add column if not exists editorial_date date")
+                .contains("set editorial_date = coalesce(published_at::date, created_at::date)")
+                .contains("alter column editorial_date set not null")
+                .contains("on news(status, editorial_date desc, published_at desc, created_at desc)");
+    }
+
     private String normalizedMigration(String filename) throws IOException {
         return Files.readString(Path.of("src", "main", "resources", "db", "migration", filename))
                 .toLowerCase()

@@ -30,6 +30,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -99,6 +100,7 @@ class NewsControllerTest {
                 null,
                 null,
                 null,
+                LocalDate.of(2026, 10, 2),
                 NewsStatus.DRAFT
         );
         when(newsService.create(any())).thenReturn(response(NewsStatus.DRAFT));
@@ -107,7 +109,8 @@ class NewsControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value("DRAFT"));
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andExpect(jsonPath("$.editorialDate").value("2026-10-02"));
     }
 
     @Test
@@ -232,6 +235,7 @@ class NewsControllerTest {
                 null,
                 null,
                 status,
+                LocalDate.of(2026, 10, 2),
                 status == NewsStatus.PUBLISHED ? Instant.now() : null,
                 status == NewsStatus.ARCHIVED ? Instant.now() : null,
                 Instant.now(),

@@ -12,7 +12,7 @@ public interface NewsRepository extends JpaRepository<News, UUID> {
     boolean existsBySlug(String slug);
     boolean existsBySlugAndIdNot(String slug, UUID id);
     Optional<News> findBySlugAndStatus(String slug, NewsStatus status);
-    List<News> findByStatusOrderByPublishedAtDescCreatedAtDesc(NewsStatus status);
+    List<News> findByStatusOrderByEditorialDateDescPublishedAtDescCreatedAtDesc(NewsStatus status);
     List<News> findAllByOrderByCreatedAtDesc();
     boolean existsByImageAssetIdAndStatus(UUID imageAssetId, NewsStatus status);
     boolean existsByVideoAssetIdAndStatus(UUID videoAssetId, NewsStatus status);

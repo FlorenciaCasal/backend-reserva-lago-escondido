@@ -17,9 +17,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.util.*;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.ZoneId;
 
 @Slf4j
@@ -34,19 +31,16 @@ public class ReservationService {
     private final AvailabilityService availabilityService;
     private final WhatsAppService whatsAppService;
 
-    private static final LocalTime VISIT_TIME = LocalTime.of(9, 30);
     private static final ZoneId ZONE_AR = ZoneId.of("America/Argentina/Buenos_Aires");
 
-    private void validateMin24Hours(LocalDate visitDate) {
-        LocalDateTime visitDateTime = LocalDateTime.of(visitDate, VISIT_TIME);
-        LocalDateTime now = LocalDateTime.now(ZONE_AR);
+    private void validateMinAdvanceDays(LocalDate visitDate) {
+        LocalDate today = LocalDate.now(ZONE_AR);
+        LocalDate minimumVisitDate = today.plusDays(7);
 
-        long hours = Duration.between(now, visitDateTime).toHours();
-
-        if (hours < 48) {
+        if (visitDate.isBefore(minimumVisitDate)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Las reservas deben realizarse con al menos 48 horas de anticipación." );
+                    "Las visitas deben solicitarse con al menos 7 días de anticipación." );
         }
     }
 
@@ -62,8 +56,8 @@ public class ReservationService {
                     "No se pueden crear reservas para fechas pasadas");
         }
 
-        // Fix #3: Validar mínimo 24 horas de anticipación
-        validateMin24Hours(req.visitDate());
+        // Validar mínimo 7 días corridos de anticipación
+        validateMinAdvanceDays(req.visitDate());
 
         String dni = reservationMapper.normalizeDni(req.dni());
 

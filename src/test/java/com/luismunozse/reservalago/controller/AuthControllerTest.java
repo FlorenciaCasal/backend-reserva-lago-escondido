@@ -72,6 +72,7 @@ class AuthControllerTest {
 
             mockMvc.perform(post("/api/auth/login")
                             .with(csrf())
+                            .header("X-Forwarded-For", "198.51.100.11")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -93,6 +94,7 @@ class AuthControllerTest {
 
             mockMvc.perform(post("/api/auth/login")
                             .with(csrf())
+                            .header("X-Forwarded-For", "198.51.100.12")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnauthorized())
@@ -109,6 +111,7 @@ class AuthControllerTest {
 
             mockMvc.perform(post("/api/auth/login")
                             .with(csrf())
+                            .header("X-Forwarded-For", "198.51.100.13")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
@@ -124,6 +127,7 @@ class AuthControllerTest {
 
             mockMvc.perform(post("/api/auth/login")
                             .with(csrf())
+                            .header("X-Forwarded-For", "198.51.100.14")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
@@ -139,6 +143,7 @@ class AuthControllerTest {
 
             mockMvc.perform(post("/api/auth/login")
                             .with(csrf())
+                            .header("X-Forwarded-For", "198.51.100.15")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
@@ -167,6 +172,7 @@ class AuthControllerTest {
 
             mockMvc.perform(post("/api/auth/login")
                             .with(csrf())
+                            .header("X-Forwarded-For", "198.51.100.16")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())

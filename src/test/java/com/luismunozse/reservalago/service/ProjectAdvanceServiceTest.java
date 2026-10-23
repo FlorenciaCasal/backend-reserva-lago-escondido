@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,6 +33,9 @@ class ProjectAdvanceServiceTest {
 
     @Mock
     private MediaAssetService mediaAssetService;
+
+    @Mock
+    private ProjectAdvanceGalleryItemService projectAdvanceGalleryItemService;
 
     @InjectMocks
     private ProjectAdvanceService projectAdvanceService;
@@ -47,6 +51,7 @@ class ProjectAdvanceServiceTest {
         when(projectRepository.findBySlugAndStatus(project.getSlug(), ProjectStatus.PUBLISHED)).thenReturn(Optional.of(project));
         when(projectAdvanceRepository.findByProjectIdOrderByAdvanceDateAscCreatedAtAscIdAsc(projectId))
                 .thenReturn(List.of(may20, june6, june8));
+        when(projectAdvanceGalleryItemService.listResponses(any())).thenReturn(List.of());
 
         List<ProjectAdvanceResponse> responses = projectAdvanceService.listPublicByProjectSlug(project.getSlug());
 
@@ -64,6 +69,7 @@ class ProjectAdvanceServiceTest {
         when(projectRepository.findBySlugAndStatus(project.getSlug(), ProjectStatus.PUBLISHED)).thenReturn(Optional.of(project));
         when(projectAdvanceRepository.findByProjectIdOrderByAdvanceDateAscCreatedAtAscIdAsc(projectId))
                 .thenReturn(List.of(firstCreated, secondCreated));
+        when(projectAdvanceGalleryItemService.listResponses(any())).thenReturn(List.of());
 
         List<ProjectAdvanceResponse> responses = projectAdvanceService.listPublicByProjectSlug(project.getSlug());
 

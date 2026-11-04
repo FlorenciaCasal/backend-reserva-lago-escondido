@@ -63,4 +63,23 @@ public class SystemConfigService {
         configRepository.save(config);
     }
 
+    public String getValue(String key, String defaultValue) {
+        return configRepository.findByConfigKey(key)
+                .map(SystemConfig::getConfigValue)
+                .orElse(defaultValue);
+    }
+
+    @Transactional
+    public void setValue(String key, String value) {
+        SystemConfig config = configRepository.findByConfigKey(key)
+                .orElseGet(() -> {
+                    SystemConfig newConfig = new SystemConfig();
+                    newConfig.setConfigKey(key);
+                    return newConfig;
+                });
+
+        config.setConfigValue(value);
+        configRepository.save(config);
+    }
+
 }

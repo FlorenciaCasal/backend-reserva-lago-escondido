@@ -140,6 +140,7 @@ class PublicControllerTest {
 
             mockMvc.perform(post("/api/reservations")
                             .with(csrf())
+                            .header("X-Forwarded-For", "198.51.100.21")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated())
@@ -160,6 +161,7 @@ class PublicControllerTest {
 
             mockMvc.perform(post("/api/reservations")
                             .with(csrf())
+                            .header("X-Forwarded-For", "198.51.100.22")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
@@ -178,6 +180,7 @@ class PublicControllerTest {
 
             mockMvc.perform(post("/api/reservations")
                             .with(csrf())
+                            .header("X-Forwarded-For", "198.51.100.23")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
@@ -199,6 +202,7 @@ class PublicControllerTest {
 
             mockMvc.perform(post("/api/reservations")
                             .with(csrf())
+                            .header("X-Forwarded-For", "198.51.100.24")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isConflict());
@@ -217,6 +221,7 @@ class PublicControllerTest {
 
             mockMvc.perform(post("/api/reservations")
                             .with(csrf())
+                            .header("X-Forwarded-For", "198.51.100.25")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());

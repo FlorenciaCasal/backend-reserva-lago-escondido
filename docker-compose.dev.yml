@@ -16,16 +16,28 @@ services:
       timeout: 5s
       retries: 5
 
+  uploads-init:
+    image: alpine:3.20
+    container_name: lago-uploads-init-dev
+    command: sh -c "mkdir -p /uploads/images && chown -R 1001:1001 /uploads"
+    volumes:
+      - app_uploads:/uploads
+    restart: "no"
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: lago-backend-dev
+    env_file:
+      - .env
     environment:
       SPRING_PROFILES_ACTIVE: dev
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lago
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      OPENAI_MODEL: "${OPENAI_MODEL:-gpt-4o-mini}"
+      APP_UPLOAD_DIR: /var/lib/lago-escondido/uploads
       DEFAULT_CAPACITY: 30
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3002,http://127.0.0.1:3000,http://127.0.0.1:3002
       FRONTEND_URL: https://reservalagoescondido.com.ar
@@ -37,11 +49,17 @@ services:
       TWILIO_WHATSAPP_FROM: "${TWILIO_WHATSAPP_FROM}"
     ports:
       - "8080:8080"
+    volumes:
+      - app_uploads:/var/lib/lago-escondido/uploads
     depends_on:
       db:
         condition: service_healthy
+      uploads-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
 volumes:
   pgdata:
+    driver: local
+  app_uploads:
     driver: local

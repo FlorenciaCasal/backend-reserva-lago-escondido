@@ -18,7 +18,7 @@ public class SystemConfig {
     @Column(nullable = false, unique = true)
     private String configKey;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "text")
     private String configValue;
 
     @Column(nullable = false)

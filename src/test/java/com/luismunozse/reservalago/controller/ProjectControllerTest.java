@@ -15,6 +15,7 @@ import com.luismunozse.reservalago.service.ProjectGalleryItemService;
 import com.luismunozse.reservalago.service.ProjectAdvanceGalleryItemService;
 import com.luismunozse.reservalago.service.ProjectImageService;
 import com.luismunozse.reservalago.service.ProjectService;
+import com.luismunozse.reservalago.service.UploadGrantService;
 import com.luismunozse.reservalago.model.MediaGalleryKind;
 import com.luismunozse.reservalago.model.MediaGallerySourceType;
 import com.luismunozse.reservalago.model.ExternalMediaProvider;
@@ -86,6 +87,9 @@ class ProjectControllerTest {
 
     @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private UploadGrantService uploadGrantService;
 
     @Test
     void shouldDeleteArchivedProjectPermanently() throws Exception {

@@ -19,6 +19,8 @@ import com.luismunozse.reservalago.dto.UpdateProjectAdvanceRequest;
 import com.luismunozse.reservalago.dto.UpdateProjectDocumentRequest;
 import com.luismunozse.reservalago.dto.UpdateProjectImageRequest;
 import com.luismunozse.reservalago.dto.UpdateProjectRequest;
+import com.luismunozse.reservalago.dto.UploadAuthorizationRequest;
+import com.luismunozse.reservalago.dto.UploadAuthorizationResponse;
 import com.luismunozse.reservalago.service.MediaAssetService;
 import com.luismunozse.reservalago.service.ProjectAdvanceAiService;
 import com.luismunozse.reservalago.service.ProjectAdvanceService;
@@ -28,6 +30,7 @@ import com.luismunozse.reservalago.service.ProjectGalleryItemService;
 import com.luismunozse.reservalago.service.ProjectAdvanceGalleryItemService;
 import com.luismunozse.reservalago.service.ProjectImageService;
 import com.luismunozse.reservalago.service.ProjectService;
+import com.luismunozse.reservalago.service.UploadGrantService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -40,6 +43,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequiredArgsConstructor
@@ -54,6 +58,7 @@ public class ProjectController {
     private final ProjectAdvanceGalleryItemService projectAdvanceGalleryItemService;
     private final ProjectDocumentService projectDocumentService;
     private final MediaAssetService mediaAssetService;
+    private final UploadGrantService uploadGrantService;
 
     @GetMapping("/api/projects")
     public List<ProjectResponse> listPublishedProjects() {
@@ -92,6 +97,15 @@ public class ProjectController {
     @ResponseStatus(HttpStatus.CREATED)
     public MediaAssetResponse uploadProjectVideo(@RequestParam("file") MultipartFile file) {
         return mediaAssetService.uploadVideo(file);
+    }
+
+    @PostMapping("/api/admin/media/upload-authorizations")
+    public UploadAuthorizationResponse createUploadAuthorization(
+            @Valid @RequestBody UploadAuthorizationRequest request,
+            Authentication authentication
+    ) {
+        var grant = uploadGrantService.issue(authentication, request.kind());
+        return new UploadAuthorizationResponse(grant.token(), grant.expiresAt());
     }
 
     @GetMapping("/api/media/{id}")

@@ -68,7 +68,7 @@ public class ProjectService {
         applyImage(project, request.imageUrl(), request.imageAssetId());
         applyVideo(project, request.videoUrl(), request.videoAssetId());
         project.setFeatured(Boolean.TRUE.equals(request.featured()));
-        applyStatus(project, request.status() == null ? ProjectStatus.PUBLISHED : request.status());
+        applyStatus(project, request.status() == null ? ProjectStatus.DRAFT : request.status());
 
         return toResponse(projectRepository.save(project));
     }

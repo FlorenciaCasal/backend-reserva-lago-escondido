@@ -48,3 +48,11 @@ run-dev.sh
 
 ### Docker ###
 docker-compose.override.yml
+
+# Local Postman environments and temporary staging data
+postman_environment_local.json
+*.dump
+*.tmp
+*.temp
+.staging-data/
+staging/

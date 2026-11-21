@@ -164,6 +164,12 @@ public class NewsAiService {
             hashtags = normalizeInstagramHashtags(hashtags);
         }
 
+        if (platform == SocialPlatform.INSTAGRAM) {
+            caption = removeDuplicatedHashtagBlock(caption, hashtags);
+        } else {
+            body = removeDuplicatedHashtagBlock(body, hashtags);
+        }
+
         if (platform == SocialPlatform.INSTAGRAM && caption.isBlank()) {
             throw new ResponseStatusException(BAD_GATEWAY, "OpenAI devolvio un caption incompleto");
         }
@@ -229,6 +235,7 @@ public class NewsAiService {
                 - Usar lenguaje institucional, claro, calido y preciso.
                 - Escribir en espanol de Argentina.
                 - La novedad debe informar un hecho, avance, actividad, comunicacion o contenido editorial concreto.
+                - Redactar predominantemente en primera persona del plural desde la voz institucional de la Reserva (por ejemplo: trabajamos, compartimos, impulsamos, seguimos cuidando). No forzar esa voz en cada oracion ni atribuir a la Reserva acciones de terceros.
                 - No convertir la novedad en proyecto, timeline, documento tecnico ni gacetilla extensa.
                 - No inventar datos concretos, fechas, instituciones, personas, cifras, resultados ni promesas que no esten en el brief.
                 - Si falta informacion, redactar de forma prudente sin completar con datos inventados.
@@ -264,18 +271,22 @@ public class NewsAiService {
                 ? """
                 Plataforma: Instagram.
                 - Crear un caption natural, breve y visual.
-                - Incluir hashtags relevantes separados por espacios, sin exagerar cantidad.
+                - El caption debe contener unicamente el texto principal, sin hashtags.
+                - Incluir los hashtags exclusivamente en el campo hashtags, separados por espacios y sin repetirlos dentro del caption.
                 - Cada hashtag debe venir listo para copiar, empezando con #, por ejemplo: #ReservaLagoEscondido #Biodiversidad.
                 - Proponer un CTA concreto para interaccion manual.
                 - Proponer alt text descriptivo para la imagen principal cuando corresponda.
                 - El body puede quedar vacio; el contenido principal debe estar en caption.
+                - Redactar predominantemente en primera persona del plural desde la voz institucional de la Reserva. No forzar esa voz en cada oracion ni atribuir a la Reserva acciones de terceros.
                 """
                 : """
                 Plataforma: Facebook.
                 - Crear un texto/cuerpo adaptado a Facebook, mas conversacional e informativo que el caption de Instagram.
+                - El body debe contener unicamente el texto principal, sin un bloque final de hashtags.
                 - Proponer un CTA concreto para interaccion manual.
-                - Usar hashtags solo si aportan contexto y con moderacion.
+                - Entregar los hashtags exclusivamente en el campo hashtags, sin repetirlos dentro del body.
                 - El caption puede quedar vacio; el contenido principal debe estar en body.
+                - Redactar predominantemente en primera persona del plural desde la voz institucional de la Reserva. No forzar esa voz en cada oracion ni atribuir a la Reserva acciones de terceros.
                 """;
 
         return """
@@ -286,6 +297,7 @@ public class NewsAiService {
                 Reglas:
                 - Escribir en espanol de Argentina.
                 - Adaptar el texto a la plataforma indicada; no copiar literalmente el texto web.
+                - Usar predominantemente la primera persona del plural desde la voz institucional de la Reserva, sin forzarla en cada oracion.
                 - No inventar datos concretos, fechas, cifras, instituciones ni promesas.
                 - Mantener tono institucional, cercano, ambiental y responsable.
                 - No incluir instrucciones tecnicas ni mencionar IA.
@@ -441,5 +453,35 @@ public class NewsAiService {
                 .map(token -> token.startsWith("#") ? token : "#" + token)
                 .reduce((left, right) -> left + " " + right)
                 .orElse("");
+    }
+
+    private String removeDuplicatedHashtagBlock(String text, String hashtags) {
+        if (text == null || text.isBlank() || hashtags == null || hashtags.isBlank()) {
+            return text == null ? "" : text.trim();
+        }
+
+        String[] lines = text.trim().split("\\R");
+        if (lines.length == 0) return text.trim();
+
+        String lastLine = lines[lines.length - 1].trim();
+        String[] duplicatedTokens = lastLine.split("\\s+");
+        if (duplicatedTokens.length == 0 || java.util.Arrays.stream(duplicatedTokens)
+                .anyMatch(token -> !token.matches("#[\\p{L}\\p{N}_]+"))) {
+            return text.trim();
+        }
+
+        java.util.List<String> expected = java.util.Arrays.stream(hashtags.trim().split("\\s+"))
+                .map(token -> token.replaceFirst("^#", "").toLowerCase(java.util.Locale.ROOT))
+                .filter(token -> !token.isBlank())
+                .toList();
+        java.util.List<String> actual = java.util.Arrays.stream(duplicatedTokens)
+                .map(token -> token.substring(1).toLowerCase(java.util.Locale.ROOT))
+                .toList();
+
+        if (!actual.equals(expected)) {
+            return text.trim();
+        }
+
+        return String.join("\n", java.util.Arrays.copyOf(lines, lines.length - 1)).stripTrailing();
     }
 }

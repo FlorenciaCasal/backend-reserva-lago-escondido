@@ -74,6 +74,7 @@ class NewsAiServiceTest {
     void shouldNormalizeInstagramHashtagsGeneratedWithoutHash() throws Exception {
         NewsSocialContentResponse response = parseSocialResponse(
                 SocialPlatform.INSTAGRAM,
+                "Caption",
                 "ReservaNaturalLagoEscondido Biodiversidad EducacionAmbiental"
         );
 
@@ -85,6 +86,7 @@ class NewsAiServiceTest {
     void shouldNotNormalizeFacebookHashtags() throws Exception {
         NewsSocialContentResponse response = parseSocialResponse(
                 SocialPlatform.FACEBOOK,
+                "Texto Facebook",
                 "ReservaNaturalLagoEscondido Biodiversidad EducacionAmbiental"
         );
 
@@ -92,14 +94,76 @@ class NewsAiServiceTest {
                 .isEqualTo("ReservaNaturalLagoEscondido Biodiversidad EducacionAmbiental");
     }
 
-    private NewsSocialContentResponse parseSocialResponse(SocialPlatform platform, String hashtags) throws Exception {
+    @Test
+    void shouldRemoveExactTrailingInstagramHashtagBlock() throws Exception {
+        NewsSocialContentResponse response = parseSocialResponse(
+                SocialPlatform.INSTAGRAM,
+                "Trabajamos para cuidar este territorio.\n\n#Reserva #Biodiversidad",
+                "#Reserva #Biodiversidad"
+        );
+
+        assertThat(response.caption()).isEqualTo("Trabajamos para cuidar este territorio.");
+    }
+
+    @Test
+    void shouldKeepCaptionWhenHashtagBlockIsOnlyPartiallyEqual() throws Exception {
+        NewsSocialContentResponse response = parseSocialResponse(
+                SocialPlatform.INSTAGRAM,
+                "Trabajamos para cuidar este territorio.\n\n#Reserva #Otro",
+                "#Reserva #Biodiversidad"
+        );
+
+        assertThat(response.caption()).isEqualTo("Trabajamos para cuidar este territorio.\n\n#Reserva #Otro");
+    }
+
+    @Test
+    void shouldKeepLegitimateInlineHashtags() throws Exception {
+        NewsSocialContentResponse response = parseSocialResponse(
+                SocialPlatform.INSTAGRAM,
+                "Compartimos #Reserva con nuestra comunidad.",
+                "#Reserva"
+        );
+
+        assertThat(response.caption()).isEqualTo("Compartimos #Reserva con nuestra comunidad.");
+    }
+
+    @Test
+    void shouldKeepTextWhenThereAreNoHashtags() throws Exception {
+        NewsSocialContentResponse response = parseSocialResponse(
+                SocialPlatform.INSTAGRAM,
+                "Trabajamos para cuidar este territorio.",
+                ""
+        );
+
+        assertThat(response.caption()).isEqualTo("Trabajamos para cuidar este territorio.");
+    }
+
+    @Test
+    void shouldRemoveExactTrailingFacebookHashtagBlock() throws Exception {
+        NewsSocialContentResponse response = parseSocialResponse(
+                SocialPlatform.FACEBOOK,
+                "Compartimos nuestro trabajo.\n\n#Reserva #Comunidad",
+                "Reserva Comunidad"
+        );
+
+        assertThat(response.body()).isEqualTo("Compartimos nuestro trabajo.");
+    }
+
+    private NewsSocialContentResponse parseSocialResponse(
+            SocialPlatform platform,
+            String captionOrBody,
+            String hashtags
+    ) throws Exception {
         HttpResponse<String> httpResponse = mock(HttpResponse.class);
         when(httpResponse.statusCode()).thenReturn(200);
-        when(httpResponse.body()).thenReturn("""
-                {
-                  "output_text": "{\\"caption\\":\\"Caption\\",\\"body\\":\\"Texto Facebook\\",\\"hashtags\\":\\"%s\\",\\"callToAction\\":\\"CTA\\",\\"altText\\":\\"Alt text\\"}"
-                }
-                """.formatted(hashtags));
+        String outputText = objectMapper.writeValueAsString(Map.of(
+                "caption", platform == SocialPlatform.INSTAGRAM ? captionOrBody : "Caption",
+                "body", platform == SocialPlatform.FACEBOOK ? captionOrBody : "Texto Facebook",
+                "hashtags", hashtags,
+                "callToAction", "CTA",
+                "altText", "Alt text"
+        ));
+        when(httpResponse.body()).thenReturn(objectMapper.writeValueAsString(Map.of("output_text", outputText)));
 
         News news = new News();
         news.setId(UUID.randomUUID());
